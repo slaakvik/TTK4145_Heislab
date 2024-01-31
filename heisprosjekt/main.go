@@ -3,12 +3,12 @@ package main
 import (
 	"Heis/driver-go/elevio"
 	"Heis/fsm"
-	"fmt"
 )
 
 func main() {
 
 	numFloors := 4
+	numButtons := 3
 	elevio.Init("localhost:15657", numFloors)
 
 	var d elevio.MotorDirection = elevio.MD_Up
@@ -28,6 +28,13 @@ func main() {
 		fsm.Fsm_onInitBetweenFloors()
 	}
 
+
+	for{
+		
+	}
+
+
+/*
 	for {
 		select {
 		case a := <-drv_buttons:
@@ -60,4 +67,5 @@ func main() {
 			}
 		}
 	}
+	*/
 }
