@@ -9,7 +9,7 @@ import (
 	"fmt"
 	// "Heis/noe noe elevator_io_types ??"
 )
-
+```
 func fsm_onRequestButtonPress(btn_floor int, btn_type Button) {
 	fmt.Printf("\n\n%s(%d, %s)\n", "fsm_onRequestButtonPress", btnFloor, btnType.toString())
 	elevator_print(elevator)
@@ -46,7 +46,7 @@ func fsm_onRequestButtonPress(btn_floor int, btn_type Button) {
 	setAllLights(elevator)
 
 	fmt.Println("\nNew state:")
-
+```
 
 
 ---------------------------------ANDERS SITT-------------------------------
@@ -57,7 +57,7 @@ type DirnBehaviourPair struct {
 }
 
 
-
+```
 func fsm_onFloorArrival(newFloor int) int{
 	//printf("\n\n%s(%d)\n", __FUNCTION__, newFloor);
     //elevator_print(elevator);
@@ -83,11 +83,12 @@ func fsm_onFloorArrival(newFloor int) int{
     //elevator_print(elevator); 
 
 }
+```
 
 //Trenger vi å bruke pekere her? (*elevator)?
 
 
-
+```
 func fsm_onDoorTimeout() { //????
 	//printf("\n\n%s()\n", __FUNCTION__);
     //elevator_print(elevator);
@@ -110,7 +111,7 @@ func fsm_onDoorTimeout() { //????
 
 
 }
-
+```
 
 
 
