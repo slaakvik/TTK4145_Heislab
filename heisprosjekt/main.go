@@ -9,7 +9,7 @@ func main() {
 
 	NumFloors := 4
 	NumButtons := 3
-	elevio.Init("localhost:15657", numFloors)
+	elevio.Init("localhost:15657", NumFloors)
 
 	var d elevio.MotorDirection = elevio.MD_Up
 	//elevio.SetMotorDirection(d)
@@ -28,44 +28,42 @@ func main() {
 		fsm.Fsm_onInitBetweenFloors()
 	}
 
+	for {
 
-	for{
-		
 	}
 
+	/*
+		for {
+			select {
+			case a := <-drv_buttons:
+				fmt.Printf("%+v\n", a)
+				elevio.SetButtonLamp(a.Button, a.Floor, true)
 
-/*
-	for {
-		select {
-		case a := <-drv_buttons:
-			fmt.Printf("%+v\n", a)
-			elevio.SetButtonLamp(a.Button, a.Floor, true)
-
-		case a := <-drv_floors:
-			fmt.Printf("%+v\n", a)
-			if a == numFloors-1 {
-				d = elevio.MD_Down
-			} else if a == 0 {
-				d = elevio.MD_Up
-			}
-			elevio.SetMotorDirection(d)
-
-		case a := <-drv_obstr:
-			fmt.Printf("%+v\n", a)
-			if a {
-				elevio.SetMotorDirection(elevio.MD_Stop)
-			} else {
+			case a := <-drv_floors:
+				fmt.Printf("%+v\n", a)
+				if a == numFloors-1 {
+					d = elevio.MD_Down
+				} else if a == 0 {
+					d = elevio.MD_Up
+				}
 				elevio.SetMotorDirection(d)
-			}
 
-		case a := <-drv_stop:
-			fmt.Printf("%+v\n", a)
-			for f := 0; f < numFloors; f++ {
-				for b := elevio.ButtonType(0); b < 3; b++ {
-					elevio.SetButtonLamp(b, f, false)
+			case a := <-drv_obstr:
+				fmt.Printf("%+v\n", a)
+				if a {
+					elevio.SetMotorDirection(elevio.MD_Stop)
+				} else {
+					elevio.SetMotorDirection(d)
+				}
+
+			case a := <-drv_stop:
+				fmt.Printf("%+v\n", a)
+				for f := 0; f < numFloors; f++ {
+					for b := elevio.ButtonType(0); b < 3; b++ {
+						elevio.SetButtonLamp(b, f, false)
+					}
 				}
 			}
 		}
-	}
 	*/
 }

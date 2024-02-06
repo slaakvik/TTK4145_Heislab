@@ -13,10 +13,10 @@ const (
 )
 
 type Elevator struct {
-	floor              int
-	dirn               elevio.MotorDirection
-	requests           [][]int
-	behaviour          ElevatorBehaviour
-	doorOpenDuration_s float32
-	doorOpen           bool
+	Floor              int
+	Dirn               elevio.MotorDirection
+	Requests           [][]int
+	Behaviour          ElevatorBehaviour
+	DoorOpenDuration_s float32
+	DoorOpen           bool
 }
