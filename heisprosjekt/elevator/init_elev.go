@@ -1,18 +1,16 @@
-//package elevator
+package elevator
 
-//import "Heis/driver-go/elevio"
+import (
+	"Heis/driver-go/elevio"
+	
+)
 
+func InitElev() {				//elevator_unitialized?
 
-
-
-/*func InitElev() {
-
-	elev := Elevator{
-	floor = -1
-	dirn = elevio.MD_Stop
-	request = {{false, false, false, false},
-	           {false, false, false, false},
-			   {false, false, false, false}}
-
-
-}*/
+	elev := e Elevator
+	floor := -1
+	dirn := elevio.MD_Stop
+	request := [NumFloor][NumButtons] int {{0, 0, 0, 0},
+		{0, 0, 0, 0},
+		{0, 0, 0, 0}}
+}

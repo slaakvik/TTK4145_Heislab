@@ -12,15 +12,11 @@ const (
 	EB_Moving
 )
 
-
-
 type Elevator struct {
-	floor int
-	dirn elevio.MotorDirection
-	requests[][] bool
-	behaviour ElevatorBehaviour
-	doorOpenDuration_s	float32
-	doorOpen bool
-
+	floor              int
+	dirn               elevio.MotorDirection
+	requests           [][]int
+	behaviour          ElevatorBehaviour
+	doorOpenDuration_s float32
+	doorOpen           bool
 }
-

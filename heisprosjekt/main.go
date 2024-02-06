@@ -7,8 +7,8 @@ import (
 
 func main() {
 
-	numFloors := 4
-	numButtons := 3
+	NumFloors := 4
+	NumButtons := 3
 	elevio.Init("localhost:15657", numFloors)
 
 	var d elevio.MotorDirection = elevio.MD_Up
