@@ -112,6 +112,34 @@ func fsm_onDoorTimeout() { //????
 
 }
 ```
+```
+func Fsm_onFloorArrival(newFloor int){
+	//printf("\n\n%s(%d)\n", __FUNCTION__, newFloor);
+    //elevator_print(elevator);
+	e.Floor = newFloor
+
+	elevio.GetFloor()
+
+	switch e.Behaviour{
+	case elevator.EB_Moving:
+		if requests.Requests_shouldStop(e){
+			elevio.SetMotorDirection(elevio.MD_Stop)
+			elevio.SetDoorOpenLamp(true)
+			e = requests.Requests_clearAtCurrentFloor(e)
+			time.Sleep(time.Duration(e.DoorOpenDuration_s)*time.Second)
+			setAllLights(e) // need to rewrite this function
+			e.Behaviour = elevator.EB_DoorOpen
+		}
+	default:
+	}
+
+}
+```
+
+
+
+
+
 
 
 
