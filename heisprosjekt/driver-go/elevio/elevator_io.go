@@ -10,7 +10,10 @@ import (
 const _pollRate = 20 * time.Millisecond
 
 var _initialized bool = false
-var _numFloors int = 4
+
+const NumFloors int = 4
+const NumButtons int = 3
+
 var _mtx sync.Mutex
 var _conn net.Conn
 
@@ -26,8 +29,8 @@ type ButtonType int
 
 const (
 	BT_HallUp   ButtonType = 0
-	BT_HallDown            = 1
-	BT_Cab                 = 2
+	BT_HallDown ButtonType  = 1
+	BT_Cab      ButtonType  = 2
 )
 
 type ButtonEvent struct {
@@ -40,7 +43,7 @@ func Init(addr string, numFloors int) {
 		fmt.Println("Driver already initialized!")
 		return
 	}
-	_numFloors = numFloors
+	//NumFloors = numFloors
 	_mtx = sync.Mutex{}
 	var err error
 	_conn, err = net.Dial("tcp", addr)
@@ -71,10 +74,10 @@ func SetStopLamp(value bool) {
 }
 
 func PollButtons(receiver chan<- ButtonEvent) {
-	prev := make([][3]bool, _numFloors)
+	prev := make([][3]bool, NumFloors)
 	for {
 		time.Sleep(_pollRate)
-		for f := 0; f < _numFloors; f++ {
+		for f := 0; f < NumFloors; f++ {
 			for b := ButtonType(0); b < 3; b++ {
 				v := GetButton(b, f)
 				if v != prev[f][b] && v != false {
@@ -189,6 +192,3 @@ func toBool(a byte) bool {
 	}
 	return b
 }
-
-
-

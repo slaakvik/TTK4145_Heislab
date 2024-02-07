@@ -1,140 +1,127 @@
 package requests
 
 import (
-	"Heis/elevator"
 	"Heis/driver-go/elevio"
+	"Heis/elevator"
 )
 
+var _numFloors int = elevio.NumFloors
+var _numButtons int = elevio.NumButtons
+
 type DirnBehaviourPair struct {
-	dirn      elevio.MotorDirection
-	behaviour ElevatorBehaviour
+	Dirn      elevio.MotorDirection
+	Behaviour elevator.ElevatorBehaviour
 }
 
-func requests_above(e elevator.Elevator) int {
-	for f := e.floor + 1; f < NumFloors; i++ {
-		for btn := 0; btn < NumButtons; btn++ {
-			if e.requests[f][btn] {
-				return 1
+func requests_above(e elevator.Elevator) bool {
+	for f := e.Floor + 1; f < _numFloors; f++ {
+		for btn := 0; btn < _numButtons; btn++ {
+			if e.Requests[f][btn] == true {
+				return true
 			}
 		}
 	}
-	return 0
+	return false
 }
 
-func requests_below(e Elevator) int {
-	for f := 0; f < e.floor; f++ {
-		for btn := 0; btn < NumButtons; btn++ {
-			if e.requests[f][btn] {
-				return 1
+func requests_below(e elevator.Elevator) bool {
+	for f := 0; f < e.Floor; f++ {
+		for btn := 0; btn < _numButtons; btn++ {
+			if e.Requests[f][btn] == true {
+				return true
 			}
 		}
 	}
-	return 0
+	return false
 }
 
-func requests_here(e Elevator) int {
-	for btn := 0; btn < NumButtons; btn++ {
-		if e.requests[e.floor][btn] {
-			return 1
+func requests_here(e elevator.Elevator) bool {
+	for btn := 0; btn < _numButtons; btn++ {
+		if e.Requests[e.Floor][btn] == true {
+			return true
 		}
 	}
-	return 0
+	return false
 }
 
-func Requests_chooseDirection(e Elevator) DirnBehaviourPair {
-	switch e.dirn {
-	case MD_Up:
-		if requests_above(e) != 0{											//trenger vi !=0 her? vi sier jo if requests_above = 1 på de under?
-			return DirnBehaviourPair{dirn: MD_Up, behaviour: EB_Moving}		//trenger vi å ha dirn: og behaviour: foran?
+func Requests_chooseDirection(e elevator.Elevator) DirnBehaviourPair {
+	switch e.Dirn {
+	case elevio.MD_Up:
+		if requests_above(e) {
+			return DirnBehaviourPair{Dirn: elevio.MD_Up, Behaviour: elevator.EB_Moving}
+		} else if requests_here(e) {
+			return DirnBehaviourPair{Dirn: elevio.MD_Down, Behaviour: elevator.EB_DoorOpen}
+		} else if requests_below(e) {
+			return DirnBehaviourPair{Dirn: elevio.MD_Down, Behaviour: elevator.EB_Moving}
+		} else {
+			return DirnBehaviourPair{Dirn: elevio.MD_Stop, Behaviour: elevator.EB_Idle}
 		}
-		else if requests_here(e) {
-			return DirnBehaviourPair{MD_Down.EB_DoorOpen}
+	case elevio.MD_Down:
+		if requests_below(e) {
+			return DirnBehaviourPair{Dirn: elevio.MD_Down, Behaviour: elevator.EB_Moving}
+		} else if requests_here(e) {
+			return DirnBehaviourPair{Dirn: elevio.MD_Up, Behaviour: elevator.EB_DoorOpen}
+		} else if requests_above(e) {
+			return DirnBehaviourPair{Dirn: elevio.MD_Up, Behaviour: elevator.EB_Moving}
+		} else {
+			return DirnBehaviourPair{Dirn: elevio.MD_Stop, Behaviour: elevator.EB_Idle}
 		}
-		else if requests_below(e) {
-			return DirnBehaviourPair{dir
-				n: MD_Down, behaviour: EB_Moving}
-		}
-		else {
-			return DirnBehaviourPair{MD_Stop,EB_Idle}
-		}
-	case MD_Down:
-		if requests_below(e){
-			return DirnBehaviourPair{MD_Down,EB_Moving}
-		}
-		else if requests_here(e){
-			return DirnBehaviourPair{MD_Up,EB_DoorOpen}
-		}
-		else if requests_above(e) {
-			return DirnBehaviourPair{MD_Up,EB_Moving}
-		}
-		else{
-			return DirnBehaviourPair{MD_Stop,EB_Idle}
-		}
-	case MD_Stop:
-		if requests_here(e){
-			return DirnBehaviourPair{MD_Stop,EB_DoorOpen}
-		}
-		else if requests_above(e) {
-			return DirnBehaviourPair{MD_Up,EB_Moving}
-		}
-		else if requests_below(e){
-			return DirnBehaviourPair{MD_Down,EB_Moving}
-
-		}
-		else{
-			return DirnBehaviourPair{MD_Stop,EB_Idle}
+	case elevio.MD_Stop:
+		if requests_here(e) {
+			return DirnBehaviourPair{Dirn: elevio.MD_Stop, Behaviour: elevator.EB_DoorOpen}
+		} else if requests_above(e) {
+			return DirnBehaviourPair{Dirn: elevio.MD_Up, Behaviour: elevator.EB_Moving}
+		} else if requests_below(e) {
+			return DirnBehaviourPair{Dirn: elevio.MD_Down, Behaviour: elevator.EB_Moving}
+		} else {
+			return DirnBehaviourPair{Dirn: elevio.MD_Stop, Behaviour: elevator.EB_Idle}
 		}
 	default:
-		return DirnBehaviourPair{MD_Stop,EB_Idle}
+		return DirnBehaviourPair{Dirn: elevio.MD_Stop, Behaviour: elevator.EB_Idle}
 	}
 }
 
-
-
-
-func Requests_shouldStop(e Elevator) int {
-	switch e.dirn {
-	case MD_Down:
-		return e.requests[e.floor][BT_HallDown] || e.requests[e.floor][BT_Cab] || !requests_below(e)
-	case MD_Up:
-		return e.requests[e.floor][BT_HallUp] || e.requests[e.floor][B_Cab] || !requests_above(e)
-	case MD_Stop:
+func Requests_shouldStop(e elevator.Elevator) bool {
+	switch e.Dirn {
+	case elevio.MD_Down:
+		return e.Requests[e.Floor][elevio.BT_HallDown] || e.Requests[e.Floor][elevio.BT_Cab] || !requests_below(e)
+	case elevio.MD_Up:
+		return e.Requests[e.Floor][elevio.BT_HallUp] || e.Requests[e.Floor][elevio.BT_Cab] || !requests_above(e)
+	case elevio.MD_Stop:
+		return true
 	default:
-		return 1
+		return true
 	}
 }
 
-
-func Requests_shouldClearImmediately(e Elevator, btn_floor int, btn_type Button) int {
-		if e.floor == btn_floor && ((e.dirn == MD_Up && btn_type == BT_HallUp) || 
-		(e.dirn == MD_Down && btn_type == BT_HallDown) || 
-		e.dirn == MD_Stop || 
-		btn_type == BT_Cab) {
-			return 1
-		}
-		else return 0			//Må man ha klammeparentes her?
+func Requests_shouldClearImmediately(e elevator.Elevator, btn_floor int, btn_type elevio.ButtonType) bool {
+	if e.Floor == btn_floor && ((e.Dirn == elevio.MD_Up && btn_type == elevio.BT_HallUp) ||
+		(e.Dirn == elevio.MD_Down && btn_type == elevio.BT_HallDown) ||
+		e.Dirn == elevio.MD_Stop ||
+		btn_type == elevio.BT_Cab) {
+		return true
+	} else {
+		return false
+	} //Må man ha klammeparentes her?
 }
 
-
-func Requests_clearAtCurrentFloor(e Elevator) Elevator {
-	e.requests[e.floor][BT_Cab] = 0
-	switch e.dirn {
-	case MD_Up:
-		if !requests_above(e) && !e.requests[e.floor][BT_HallUp] {
-			e.requests[e.floor][BT_HallDown] = 0
+func Requests_clearAtCurrentFloor(e elevator.Elevator) elevator.Elevator {
+	e.Requests[e.Floor][elevio.BT_Cab] = false
+	switch e.Dirn {
+	case elevio.MD_Up:
+		if !requests_above(e) && !e.Requests[e.Floor][elevio.BT_HallUp] {
+			e.Requests[e.Floor][elevio.BT_HallDown] = false
 		}
-		e.requests[e.floor][BT_HallUp] = 0		
-	case MD_Down:
-		if !requests_below(e) && !e.requests[e.floor][BT_HallDown] {
-			e.requests[e.floor][BT_HallUp] = 0
+		e.Requests[e.Floor][elevio.BT_HallUp] = false
+	case elevio.MD_Down:
+		if !requests_below(e) && !e.Requests[e.Floor][elevio.BT_HallDown] {
+			e.Requests[e.Floor][elevio.BT_HallUp] = false
 		}
-		e.requests[e.floor][BT_HallDown] = 0
-	case MD_Stop:
+		e.Requests[e.Floor][elevio.BT_HallDown] = false
+	case elevio.MD_Stop:
 	default:
-		e.requests[e.floor][BT_HallUp] = 0
-		e.requests[e.floor][BT_HallDown] = 0
+		e.Requests[e.Floor][elevio.BT_HallUp] = false
+		e.Requests[e.Floor][elevio.BT_HallDown] = false
 	}
 	return e
 }
-
-
