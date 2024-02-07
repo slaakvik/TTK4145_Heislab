@@ -2,6 +2,25 @@
 Heislab i emnet TTK4145 Sanntidsprogrammering
 
 
+Onsdag kveld: 
+Vi bør lage en funksjon som endrer både motordirection og elevatiour direction. 
+
+feilen vår lå i at vi ikke endret direction på motoren da vi endret elevator direction.
+
+/*
+funksjonen vil se slik ut, bare ikke skriv den i elevator modulen. skriv den heller i requests. requests har allerede importert elevator, så vi ønsker ikke å importere requests i elevator. 
+func Elevator_directionChange(elev *Elevator,pair requests.DirnBehaviourPair){
+	elev.Dirn = pair.Dirn
+	elev.Behaviour = pair.Behaviour
+	elevio.SetMotorDirection(elev.Dirn)
+}
+*/
+
+Hvis vi trykker en knapp som er i samme etasjen som heisen befinner seg i, så får ikke heisen til å ta nye ordre senere. låser seg fast. ellers funker den greit (tror vi). 
+
+
+
+
 --------------------JONATHAN SITT--------------------------
 ___________MAIN.GO____________________
 package main
