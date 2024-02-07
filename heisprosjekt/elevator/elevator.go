@@ -27,3 +27,4 @@ func Elevator_print(
 	fmt.Printf("Floor: %d, Dirn: %d, Requests: %v, Behaviour: %d, DoorOpenDuration: %f, DoorOpen: %t\n",
 		elevator.Floor, elevator.Dirn, elevator.Requests, elevator.Behaviour, elevator.DoorOpenDuration_s, elevator.DoorOpen)
 }
+

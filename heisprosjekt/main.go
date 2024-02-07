@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	//heisann, din gamle ørn!
+	//heisann, din gamle ørn2!
 
 	_numFloors := elevio.NumFloors
 	//_numButtons := elevio.NumButtons
@@ -52,7 +52,7 @@ func main() {
 		case a := <-drv_buttons:
 			fmt.Printf("%+v\n", a)
 			elevio.SetButtonLamp(a.Button, a.Floor, true)
-			fsm.Fsm_onRequestButtonPress(elev, a.Floor, a.Button)
+			fsm.Fsm_onRequestButtonPress(&elev, a.Floor, a.Button)
 
 		case a := <-drv_floors: // a er etasjen heisen er i
 			fmt.Printf("%+v\n", a)
