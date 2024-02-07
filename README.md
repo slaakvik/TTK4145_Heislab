@@ -3,8 +3,93 @@ Heislab i emnet TTK4145 Sanntidsprogrammering
 
 
 --------------------JONATHAN SITT--------------------------
+___________MAIN.GO____________________
+package main
+
+import (
+	"Heis/driver-go/elevio"
+	"Heis/elevator"
+	"Heis/fsm"
+	"fmt"
+)
+
+func main() {
+
+	numFloors := 4
+	numButtons := 3
+	elevio.Init("localhost:15657", numFloors)
+
+	//Initialiserer en heisstruct
+	e elevator.InitElev()
+
+	var d elevio.MotorDirection = elevio.MD_Up
+	//elevio.SetMotorDirection(d)
+
+	drv_buttons := make(chan elevio.ButtonEvent)
+	drv_floors := make(chan int)
+	drv_obstr := make(chan bool)
+	drv_stop := make(chan bool)
+
+	go elevio.PollButtons(drv_buttons)
+	go elevio.PollFloorSensor(drv_floors)
+	go elevio.PollObstructionSwitch(drv_obstr)
+	go elevio.PollStopButton(drv_stop)
+	/* Lage en tilsvarende funksjon som oppdaterer
+		heisstructen?
+	go elevator.status(drv_buttons, drv_floors,
+						drv_obstr, drv_stop)*/
+
+	if elevio.GetFloor() == -1 {
+		fsm.Fsm_onInitBetweenFloors()
+	}
+
+	fmt.Printf("Started!\n")
+
+	for {
+		select {
+		case a := <-drv_buttons:
+			fmt.Printf("%+v\n", a)
+			elevio.SetButtonLamp(a.Button, a.Floor, true)
+			fsm.Fsm_onRequestButtonPress(e, a.Floor, a.Button)
+
+		case a := <-drv_floors: // a er etasjen heisen er i
+			fmt.Printf("%+v\n", a)
+			fsm.Fsm_onFloorArrival(a)
+
+			/*if a == numFloors-1 {
+				d = elevio.MD_Down
+			} else if a == 0 {
+				d = elevio.MD_Up
+			}*/
+			elevio.SetMotorDirection(d)
+
+			// Fikser disse funksjonene senere
+			/*
+				case a := <-drv_obstr:
+					fmt.Printf("%+v\n", a)
+					if a {
+						elevio.SetMotorDirection(elevio.MD_Stop)
+					} else {
+						elevio.SetMotorDirection(d)
+					}
+
+				case a := <-drv_stop:
+					fmt.Printf("%+v\n", a)
+					for f := 0; f < numFloors; f++ {
+						for b := elevio.ButtonType(0); b < 3; b++ {
+							elevio.SetButtonLamp(b, f, false)
+						}
+					}
+			*/
+		}
+	}
+
+}
 
 
+
+
+_____________HUSKERIKKE.GO_________________
 import (
 	"fmt"
 	// "Heis/noe noe elevator_io_types ??"
