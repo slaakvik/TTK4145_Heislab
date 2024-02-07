@@ -10,8 +10,9 @@ import (
 
 // Finite state machine
 
-func Fsm_onInitBetweenFloors() {
+func Fsm_onInitBetweenFloors(elev *elevator.Elevator) {
 	elevio.SetMotorDirection(elevio.MD_Down)
+	elev.Behaviour = elevator.EB_Moving
 }
 
 func setAllLights(elev elevator.Elevator) {
@@ -63,24 +64,28 @@ func Fsm_onRequestButtonPress(elev elevator.Elevator, btn_floor int, btn_type el
 	fmt.Println("\nNew state:")
 }
 
-func Fsm_onFloorArrival(elev elevator.Elevator, newFloor int) {
+func Fsm_onFloorArrival(elev *elevator.Elevator, newFloor int) { //elevptr
 	//printf("\n\n%s(%d)\n", __FUNCTION__, newFloor);
 	//elevator_print(elevator);
 	elev.Floor = newFloor
 
-	elevio.GetFloor()
+	elevio.SetFloorIndicator(elev.Floor)
 
 	switch elev.Behaviour {
 	case elevator.EB_Moving:
-		if requests.Requests_shouldStop(elev) {
+		if requests.Requests_shouldStop(*elev) {
 			elevio.SetMotorDirection(elevio.MD_Stop)
 			elevio.SetDoorOpenLamp(true)
-			elev = requests.Requests_clearAtCurrentFloor(elev)
+			// elev = requests.Requests_clearAtCurrentFloor(*elev)
+			requests.Requests_clearAtCurrentFloor(elev)
+
 			time.Sleep(time.Duration(elev.DoorOpenDuration_s) * time.Second)
-			setAllLights(elev) // need to rewrite this function
+			setAllLights(*elev) // need to rewrite this function
 			elev.Behaviour = elevator.EB_DoorOpen
 		}
 	default:
+		// elev.Dirn = elevio.MD_Stop
+		// elevio.SetMotorDirection(elev.Dirn)
 	}
 
 }

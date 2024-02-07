@@ -16,7 +16,7 @@ type DirnBehaviourPair struct {
 func requests_above(e elevator.Elevator) bool {
 	for f := e.Floor + 1; f < _numFloors; f++ {
 		for btn := 0; btn < _numButtons; btn++ {
-			if e.Requests[f][btn] == true {
+			if e.Requests[f][btn] {
 				return true
 			}
 		}
@@ -27,7 +27,7 @@ func requests_above(e elevator.Elevator) bool {
 func requests_below(e elevator.Elevator) bool {
 	for f := 0; f < e.Floor; f++ {
 		for btn := 0; btn < _numButtons; btn++ {
-			if e.Requests[f][btn] == true {
+			if e.Requests[f][btn] {
 				return true
 			}
 		}
@@ -37,7 +37,7 @@ func requests_below(e elevator.Elevator) bool {
 
 func requests_here(e elevator.Elevator) bool {
 	for btn := 0; btn < _numButtons; btn++ {
-		if e.Requests[e.Floor][btn] == true {
+		if e.Requests[e.Floor][btn] {
 			return true
 		}
 	}
@@ -105,16 +105,16 @@ func Requests_shouldClearImmediately(e elevator.Elevator, btn_floor int, btn_typ
 	} //Må man ha klammeparentes her?
 }
 
-func Requests_clearAtCurrentFloor(e elevator.Elevator) elevator.Elevator {
+func Requests_clearAtCurrentFloor(e *elevator.Elevator) { //gjorde den til void istedenfor elevator.Elevator
 	e.Requests[e.Floor][elevio.BT_Cab] = false
 	switch e.Dirn {
 	case elevio.MD_Up:
-		if !requests_above(e) && !e.Requests[e.Floor][elevio.BT_HallUp] {
+		if !requests_above(*e) && !e.Requests[e.Floor][elevio.BT_HallUp] {
 			e.Requests[e.Floor][elevio.BT_HallDown] = false
 		}
 		e.Requests[e.Floor][elevio.BT_HallUp] = false
 	case elevio.MD_Down:
-		if !requests_below(e) && !e.Requests[e.Floor][elevio.BT_HallDown] {
+		if !requests_below(*e) && !e.Requests[e.Floor][elevio.BT_HallDown] {
 			e.Requests[e.Floor][elevio.BT_HallUp] = false
 		}
 		e.Requests[e.Floor][elevio.BT_HallDown] = false
@@ -123,5 +123,5 @@ func Requests_clearAtCurrentFloor(e elevator.Elevator) elevator.Elevator {
 		e.Requests[e.Floor][elevio.BT_HallUp] = false
 		e.Requests[e.Floor][elevio.BT_HallDown] = false
 	}
-	return e
+	//return *e
 }
