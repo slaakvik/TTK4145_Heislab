@@ -8,18 +8,14 @@ import (
 )
 
 func main() {
-	//heisann, din gamle ørn2!
+	//heisann, din gamle ørn3!
 
 	_numFloors := elevio.NumFloors
 	//_numButtons := elevio.NumButtons
-	_numButtons := elevio.NumButtons
 	elevio.Init("localhost:15657", _numFloors)
 
 	//Initialiserer en heisstruct
 	elev := elevator.InitElev()
-
-	//var d elevio.MotorDirection = elevio.MD_Up
-	//elevio.SetMotorDirection(d)
 
 	drv_buttons := make(chan elevio.ButtonEvent)
 	drv_floors := make(chan int)
@@ -31,45 +27,25 @@ func main() {
 	go elevio.PollObstructionSwitch(drv_obstr)
 	go elevio.PollStopButton(drv_stop)
 
-	/* Lage en tilsvarende funksjon som oppdaterer
-		heisstructen?
-	go elevator.status(drv_buttons, drv_floors,
-						drv_obstr, drv_stop)*/
-
 	fmt.Printf("Started!\n")
 	elevator.Elevator_print(elev)
 
 	if elevio.GetFloor() == -1 {
 		fsm.Fsm_onInitBetweenFloors(&elev)
-		//time.Sleep(1 * time.Second)
 	}
 
 	for {
 		elevator.Elevator_print(elev)
 
-		//elevio.SetMotorDirection(elev.Dirn)
 		select {
 		case a := <-drv_buttons:
 			fmt.Printf("%+v\n", a)
-			elevio.SetButtonLamp(a.Button, a.Floor, true)
+			//elevio.SetButtonLamp(a.Button, a.Floor, true)  //Denne er vel litt for tidlig 
 			fsm.Fsm_onRequestButtonPress(&elev, a.Floor, a.Button)
 
 		case a := <-drv_floors: // a er etasjen heisen er i
 			fmt.Printf("%+v\n", a)
 			fsm.Fsm_onFloorArrival(&elev, a)
-
-			// elev.Dirn = elevio.MD_Stop
-			// elevio.SetMotorDirection(elev.Dirn)
-
-			// for f := 0; f < _numFloors; f++ {
-			// 	for b := elevio.ButtonType(0); b < elevio.ButtonType(_numButtons); b++ {
-			// 		elevio.SetButtonLamp(b, f, false)
-			// 	}
-			/*if a == numFloors-1 {
-				d = elevio.MD_Down
-			} else if a == 0 {
-				d = elevio.MD_Up
-			}*/
 
 			// Fikser disse funksjonene senere
 			/*
@@ -80,14 +56,11 @@ func main() {
 					} else {
 						elevio.SetMotorDirection(d)
 					}
-			*/
-		case a := <-drv_stop:
-			fmt.Printf("%+v\n", a)
-			for f := 0; f < _numFloors; f++ {
-				for b := elevio.ButtonType(0); b < elevio.ButtonType(_numButtons); b++ {
-					elevio.SetButtonLamp(b, f, false)
-				}
-			}
+			
+				case a := <-drv_stop:
+					*/
+		
+
 		}
 	}
 }

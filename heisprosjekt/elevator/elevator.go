@@ -9,8 +9,8 @@ type ElevatorBehaviour int
 
 const (
 	EB_Idle     ElevatorBehaviour = 0
-	EB_DoorOpen                   = 1
-	EB_Moving                     = 2
+	EB_DoorOpen ElevatorBehaviour = 1
+	EB_Moving   ElevatorBehaviour = 2
 )
 
 type Elevator struct {
