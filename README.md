@@ -1,6 +1,7 @@
 # TTK4145-Heislab_GuttaHeiser
 Heislab i emnet TTK4145 Sanntidsprogrammering
-liveshare: https://prod.liveshare.vsengsaas.visualstudio.com/join?0D5D8B95D4C78D692989729ACC199C002E8E
+liveshare: https://prod.liveshare.vsengsaas.visualstudio.com/join?F6F4928D5BA6ABB6D656C8FD13AE135990EA
+
 
 
 Onsdag kveld: 
