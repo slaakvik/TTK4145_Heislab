@@ -40,7 +40,6 @@ func Fsm_onRequestButtonPress(elev *elevator.Elevator, btn_floor int, btn_type e
 	switch elev.Behaviour {
 	case elevator.EB_DoorOpen:
 		if requests.Requests_shouldClearImmediately(*elev, btn_floor, btn_type) {
-			//Må vel skje noe her?
 
 			setAllLights(*elev)
 			quit := make(chan int)
@@ -95,7 +94,7 @@ func Fsm_onRequestButtonPress(elev *elevator.Elevator, btn_floor int, btn_type e
 
 	setAllLights(*elev)
 
-	fmt.Println("\nNew state:")
+	//fmt.Println("\nNew state:")
 }
 
 func Fsm_onDoorTimeout(elev *elevator.Elevator) {
@@ -122,7 +121,7 @@ func Fsm_onDoorTimeout(elev *elevator.Elevator) {
 
 	}
 	*/
-	fmt.Println("\nNew state:")
+	//fmt.Println("\nNew state:")
 	elevator.Elevator_print(*elev)
 
 }
@@ -162,4 +161,8 @@ func Fsm_onFloorArrival(elev *elevator.Elevator, newFloor int) { //elevptr
 		//@ Disse linjene må vel være med? Slik at heisen stopper hvis den ikke allerede er moving
 	}
 
+}
+
+func Fsm_onStopButtonPress(elev *elevator.Elevator) {
+	fmt.Printf("%s()\n", "STOPP DA!")
 }

@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	//heisann, din gamle ørn3!
+	//heisann, din gamle ørn4!
 
 	_numFloors := elevio.NumFloors
 	//_numButtons := elevio.NumButtons
@@ -39,14 +39,24 @@ func main() {
 
 		select {
 		case a := <-drv_buttons:
-			fmt.Printf("%+v\n", a)
-			//elevio.SetButtonLamp(a.Button, a.Floor, true)  //Denne er vel litt for tidlig 
+			//fmt.Printf("%+v\n", a)
+			//elevio.SetButtonLamp(a.Button, a.Floor, true)  //Denne er vel litt for tidlig
 			fsm.Fsm_onRequestButtonPress(&elev, a.Floor, a.Button)
 
 		case a := <-drv_floors: // a er etasjen heisen er i
-			fmt.Printf("%+v\n", a)
+			//fmt.Printf("%+v\n", a)
 			fsm.Fsm_onFloorArrival(&elev, a)
 
+		case a := <-drv_stop:
+			//fmt.Printf("%+v\n", a)
+			// fsm.Fsm_onStopButtonPress(&elev)
+			if a {
+				elevio.SetMotorDirection(elevio.MD_Stop)
+				elevio.SetStopLamp(true)
+			} else {
+				elevio.SetMotorDirection(elev.Dirn)
+				elevio.SetStopLamp(false)
+			}
 			// Fikser disse funksjonene senere
 			/*
 				case a := <-drv_obstr:
@@ -56,11 +66,9 @@ func main() {
 					} else {
 						elevio.SetMotorDirection(d)
 					}
-			
-				case a := <-drv_stop:
-					*/
-		
 
+				case a := <-drv_stop:
+			*/
 		}
 	}
 }

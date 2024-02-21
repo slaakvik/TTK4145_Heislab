@@ -22,9 +22,41 @@ type Elevator struct {
 	DoorOpen           bool
 }
 
-func Elevator_print(
-	elevator Elevator) {
-	fmt.Printf("Floor: %d, Dirn: %d, Requests: %v, Behaviour: %d, DoorOpenDuration: %f, DoorOpen: %t\n",
-		elevator.Floor, elevator.Dirn, elevator.Requests, elevator.Behaviour, elevator.DoorOpenDuration_s, elevator.DoorOpen)
-}
+// func Elevator_print(
+// 	elevator Elevator) {
+// 	fmt.Printf("Floor: %d, Dirn: %d, Requests: %v, Behaviour: %d, DoorOpenDuration: %f, DoorOpen: %t\n",
+// 		elevator.Floor, elevator.Dirn, elevator.Requests, elevator.Behaviour, elevator.DoorOpenDuration_s, elevator.DoorOpen)
+// }
 
+func Elevator_print(es Elevator) {
+	fmt.Println("  +--------------------+")
+	fmt.Printf(
+		"  |floor = %-2d          |\n"+
+			"  |dirn  = %-12.12s|\n"+
+			"  |behav = %-12.12s|\n"+
+			"  |stop = %-12.12s|\n",
+		es.Floor,
+		fmt.Sprintf("%v", es.Dirn),
+		fmt.Sprintf("%v", es.Behaviour),
+		fmt.Sprintf("%v", elevio.GetStop()),
+	)
+	fmt.Println("  +--------------------+")
+	fmt.Println("  |  | up  | dn  | cab |")
+	for f := elevio.NumFloors - 1; f >= 0; f-- {
+		fmt.Printf("  | %d", f)
+		for btn := 0; btn < elevio.NumButtons; btn++ {
+			if (f == elevio.NumFloors-1 && btn == int(elevio.BT_HallUp)) ||
+				(f == 0 && btn == int(elevio.BT_HallDown)) {
+				fmt.Print("|     ")
+			} else {
+				if es.Requests[f][btn] {
+					fmt.Print("|  #  ")
+				} else {
+					fmt.Print("|  -  ")
+				}
+			}
+		}
+		fmt.Println("|")
+	}
+	fmt.Println("  +--------------------+")
+}
