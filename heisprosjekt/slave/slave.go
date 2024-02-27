@@ -1,25 +1,22 @@
 package slave
 
-import {
+import (
 	"fmt"
 	"Heis/network/peers"
 	"net"
 	
-}
+)
 
 /**
  * This file contain functions and variables regarding the slave
  */
 
 
-
 /**
- * @struct
- * 
+ * @var
+ * slice consisting of the slaves on the network.
  */
+var SlavesID []string
 
-type Slaves struct {
-	SlavesID []string
-}
 
- 
+//slavene er SlavesID = .p.Peers[1,:]

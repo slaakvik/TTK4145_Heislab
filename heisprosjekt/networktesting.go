@@ -15,7 +15,6 @@ import (
 )
 
 func main() {
-	master Master
 
 	var id string
 	flag.StringVar(&id, "id", "", "id of this peer")
@@ -41,8 +40,9 @@ func main() {
 		select{
 		case p:= <-peerUpdateRx:
 			peers.PrintUpdatedPeers(p)
-			master.MakeMaster(p)
+			if master.MasterID == ""{
+				master.MakeMaster(p)
+			}
 		}
 	}
-
 }
