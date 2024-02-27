@@ -33,7 +33,7 @@ func InitNet() string {
 	return id
 }
 
-func PrintPeerUpdate(p *peers.PeerUpdate) {
+func PrintPeerUpdate(p peers.PeerUpdate) {
 	fmt.Printf("Peer update:\n")
 	fmt.Printf("  Peers:    %q\n", p.Peers)
 	fmt.Printf("  New:      %q\n", p.New)

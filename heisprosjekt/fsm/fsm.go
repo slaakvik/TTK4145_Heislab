@@ -4,7 +4,6 @@ import (
 	"Heis/driver-go/elevio"
 	"Heis/elevator"
 	"Heis/requests"
-	"fmt"
 	"time"
 )
 
@@ -163,6 +162,6 @@ func Fsm_onFloorArrival(elev *elevator.Elevator, newFloor int) { //elevptr
 
 }
 
-func Fsm_onStopButtonPress(elev *elevator.Elevator) {
-	fmt.Printf("%s()\n", "STOPP DA!")
-}
+// func Fsm_onStopButtonPress(elev *elevator.Elevator) {
+// 	fmt.Printf("%s()\n", "STOPP DA!")
+// }

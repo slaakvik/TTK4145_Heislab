@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	//heisann, din gamle ørn4!
+	//heisann, din gamle ørn7!
 
 	_numFloors := elevio.NumFloors
 	//_numButtons := elevio.NumButtons
@@ -77,7 +77,7 @@ func main() {
 			}
 		case a := <-peerUpdateCh:
 			//fmt.Printf("%+v\n", a)
-			netfuncs.PrintPeerUpdate(&a)
+			netfuncs.PrintPeerUpdate(a)
 		case a := <-ElevatorRx:
 			fmt.Printf("Received: %+v\n", a)
 			// Fikser disse funksjonene senere
