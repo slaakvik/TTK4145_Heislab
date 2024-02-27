@@ -1,4 +1,4 @@
-package master 
+package slave
 
 import {
 	"fmt"
@@ -11,5 +11,15 @@ import {
  * This file contain functions and variables regarding the slave
  */
 
+
+
+/**
+ * @struct
+ * 
+ */
+
+type Slaves struct {
+	SlavesID []string
+}
 
  

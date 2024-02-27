@@ -7,13 +7,15 @@ import (
 		"Heis/fsm"
 	*/
 	"Heis/network/peers"
+	"Heis/network/localip"
+	"Heis/master"
 	"flag"
 	"fmt"
-	"Heis/network/localip"
 	"os"
 )
 
 func main() {
+	master Master
 
 	var id string
 	flag.StringVar(&id, "id", "", "id of this peer")
@@ -39,6 +41,7 @@ func main() {
 		select{
 		case p:= <-peerUpdateRx:
 			peers.PrintUpdatedPeers(p)
+			master.MakeMaster(p)
 		}
 	}
 
