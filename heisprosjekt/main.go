@@ -4,6 +4,9 @@ import (
 	"Heis/driver-go/elevio"
 	"Heis/elevator"
 	"Heis/fsm"
+	"Heis/network/bcast"
+	"Heis/network/netfuncs"
+	"Heis/network/peers"
 	"fmt"
 )
 
@@ -26,6 +29,21 @@ func main() {
 	go elevio.PollFloorSensor(drv_floors)
 	go elevio.PollObstructionSwitch(drv_obstr)
 	go elevio.PollStopButton(drv_stop)
+
+	//networkchannels:
+	//Peers
+	eleviId := netfuncs.InitNet()
+	peerUpdateCh := make(chan peers.PeerUpdate)
+	peerTxEnable := make(chan bool)
+	go peers.Transmitter(15647, eleviId, peerTxEnable)
+	go peers.Receiver(15647, peerUpdateCh)
+	//broadcast
+	ElevatorTx := make(chan netfuncs.HelloMsg)
+	ElevatorRx := make(chan netfuncs.HelloMsg)
+	go bcast.Transmitter(16569, ElevatorTx)
+	go bcast.Receiver(16569, ElevatorRx)
+
+	go netfuncs.Bcast_message(ElevatorTx, eleviId)
 
 	fmt.Printf("Started!\n")
 	elevator.Elevator_print(elev)
@@ -57,6 +75,11 @@ func main() {
 				elevio.SetMotorDirection(elev.Dirn)
 				elevio.SetStopLamp(false)
 			}
+		case a := <-peerUpdateCh:
+			//fmt.Printf("%+v\n", a)
+			netfuncs.PrintPeerUpdate(&a)
+		case a := <-ElevatorRx:
+			fmt.Printf("Received: %+v\n", a)
 			// Fikser disse funksjonene senere
 			/*
 				case a := <-drv_obstr:
@@ -66,44 +89,7 @@ func main() {
 					} else {
 						elevio.SetMotorDirection(d)
 					}
-
-				case a := <-drv_stop:
 			*/
 		}
 	}
 }
-
-/*
-	for {
-		select {
-		case a := <-drv_buttons:
-			fmt.Printf("%+v\n", a)
-			elevio.SetButtonLamp(a.Button, a.Floor, true)
-
-		case a := <-drv_floors:
-			fmt.Printf("%+v\n", a)
-			if a == numFloors-1 {
-				d = elevio.MD_Down
-			} else if a == 0 {
-				d = elevio.MD_Up
-			}
-			elevio.SetMotorDirection(d)
-
-		case a := <-drv_obstr:
-			fmt.Printf("%+v\n", a)
-			if a {
-				elevio.SetMotorDirection(elevio.MD_Stop)
-			} else {
-				elevio.SetMotorDirection(d)
-			}
-
-		case a := <-drv_stop:
-			fmt.Printf("%+v\n", a)
-			for f := 0; f < numFloors; f++ {
-				for b := elevio.ButtonType(0); b < 3; b++ {
-					elevio.SetButtonLamp(b, f, false)
-				}
-			}
-		}
-	}
-*/

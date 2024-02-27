@@ -13,8 +13,8 @@ func InitElev() Elevator { //elevator_unitialized?
 			{false, false, false},
 			{false, false, false},
 			{false, false, false}}, //vi må vel gjøre slik at man setter antall etasjer (og knapper) og itererer gjennom en for-løkke for å lage Requests
-		Behaviour:          EB_Idle,
-		DoorOpenDuration_s: 3.0,
-		DoorOpen:           false,
+		Behaviour: EB_Idle,
+		//DoorOpenDuration_s: 3.0,
+		//DoorOpen:           false,
 	}
 }

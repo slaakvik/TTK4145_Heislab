@@ -14,12 +14,12 @@ const (
 )
 
 type Elevator struct {
-	Floor              int
-	Dirn               elevio.MotorDirection
-	Requests           [elevio.NumFloors][elevio.NumButtons]bool
-	Behaviour          ElevatorBehaviour
-	DoorOpenDuration_s float32
-	DoorOpen           bool
+	Floor     int
+	Dirn      elevio.MotorDirection
+	Requests  [elevio.NumFloors][elevio.NumButtons]bool
+	Behaviour ElevatorBehaviour
+	//DoorOpenDuration_s float32
+	//DoorOpen           bool
 }
 
 // func Elevator_print(
