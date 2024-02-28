@@ -1,6 +1,7 @@
 package main
 
 import (
+	"Heis/cost_fns"
 	"Heis/driver-go/elevio"
 	"Heis/elevator"
 	"Heis/fsm"
@@ -10,8 +11,22 @@ import (
 	"fmt"
 )
 
+//_________________________________________________________________________________________________
+
+// Struct members must be public in order to be accessible by json.Marshal/.Unmarshal
+// This means they must start with a capital letter, so we need to use field renaming struct tags to make them camelCase
+
+//_________________________________________________________________________________________________
+
 func main() {
-	//heisann, din gamle ørn7!
+
+	input := cost_fns.InputToCost()
+
+	cost_fns.HRA_funcs(input)
+
+	//_________________________________________________________________________________________________
+
+	//heisann, din gamle ørn10!
 
 	_numFloors := elevio.NumFloors
 	//_numButtons := elevio.NumButtons
@@ -46,7 +61,7 @@ func main() {
 	go netfuncs.Bcast_message(ElevatorTx, eleviId)
 
 	fmt.Printf("Started!\n")
-	elevator.Elevator_print(elev)
+	//elevator.Elevator_print(elev)
 
 	if elevio.GetFloor() == -1 {
 		fsm.OnInitBetweenFloors(&elev)
@@ -78,6 +93,7 @@ func main() {
 			netfuncs.PrintPeerUpdate(a)
 		case a := <-ElevatorRx:
 			fmt.Printf("Received: %+v\n", a)
+
 		}
 	}
 }
