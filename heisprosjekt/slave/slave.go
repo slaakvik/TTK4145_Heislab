@@ -7,10 +7,6 @@ import (
 
 )
 
-//"fmt"
-//"Heis/network/peers"
-//"net"
-
 /**
  * This file contain functions and variables regarding the slave
  */
@@ -35,10 +31,3 @@ func PrintSlaves(slavesID []string){
 	}
 	
 }
-
- /* func PrintUpdatedPeers(p PeerUpdate){
-	fmt.Printf("Peer update:\n")
-	fmt.Printf("  Peers:    %q\n", p.Peers)
-	fmt.Printf("  New:      %q\n", p.New)
-	fmt.Printf("  Lost:     %q\n", p.Lost)
-} */
