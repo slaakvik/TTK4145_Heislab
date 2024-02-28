@@ -35,13 +35,13 @@ func main() {
 	eleviId := netfuncs.InitNet()
 	peerUpdateCh := make(chan peers.PeerUpdate)
 	peerTxEnable := make(chan bool)
-	go peers.Transmitter(15647, eleviId, peerTxEnable)
-	go peers.Receiver(15647, peerUpdateCh)
+	go peers.Transmitter(15623, eleviId, peerTxEnable)
+	go peers.Receiver(15623, peerUpdateCh)
 	//broadcast
 	ElevatorTx := make(chan netfuncs.HelloMsg)
 	ElevatorRx := make(chan netfuncs.HelloMsg)
-	go bcast.Transmitter(16569, ElevatorTx)
-	go bcast.Receiver(16569, ElevatorRx)
+	go bcast.Transmitter(16523, ElevatorTx)
+	go bcast.Receiver(16523, ElevatorRx)
 
 	go netfuncs.Bcast_message(ElevatorTx, eleviId)
 
@@ -49,47 +49,35 @@ func main() {
 	elevator.Elevator_print(elev)
 
 	if elevio.GetFloor() == -1 {
-		fsm.Fsm_onInitBetweenFloors(&elev)
+		fsm.OnInitBetweenFloors(&elev)
 	}
 
 	for {
-		elevator.Elevator_print(elev)
-
+		//elevator.Elevator_print(elev)
+		//fmt.Print(eleviId)
 		select {
 		case a := <-drv_buttons:
-			//fmt.Printf("%+v\n", a)
-			//elevio.SetButtonLamp(a.Button, a.Floor, true)  //Denne er vel litt for tidlig
-			fsm.Fsm_onRequestButtonPress(&elev, a.Floor, a.Button)
+			fmt.Printf("Button: %+v\n", a)
+			fsm.OnRequestButtonPress(&elev, a.Floor, a.Button)
 
 		case a := <-drv_floors: // a er etasjen heisen er i
-			//fmt.Printf("%+v\n", a)
-			fsm.Fsm_onFloorArrival(&elev, a)
+			fmt.Printf("Floor: %+v\n", a)
+			fsm.OnFloorArrival(&elev, a)
 
 		case a := <-drv_stop:
-			//fmt.Printf("%+v\n", a)
+			fmt.Printf("Stop button: %+v\n", a)
 			// fsm.Fsm_onStopButtonPress(&elev)
-			if a {
-				elevio.SetMotorDirection(elevio.MD_Stop)
-				elevio.SetStopLamp(true)
-			} else {
-				elevio.SetMotorDirection(elev.Dirn)
-				elevio.SetStopLamp(false)
-			}
+			fsm.Stop_functionality(a, elev)
+
+		case a := <-drv_obstr:
+			fmt.Printf("Obstruction %+v\n", a)
+			fsm.Obstruction_functionality(a, elev)
+
 		case a := <-peerUpdateCh:
 			//fmt.Printf("%+v\n", a)
 			netfuncs.PrintPeerUpdate(a)
 		case a := <-ElevatorRx:
 			fmt.Printf("Received: %+v\n", a)
-			// Fikser disse funksjonene senere
-			/*
-				case a := <-drv_obstr:
-					fmt.Printf("%+v\n", a)
-					if a {
-						elevio.SetMotorDirection(elevio.MD_Stop)
-					} else {
-						elevio.SetMotorDirection(d)
-					}
-			*/
 		}
 	}
 }
