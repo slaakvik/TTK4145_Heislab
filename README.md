@@ -3,6 +3,10 @@ Heislab i emnet TTK4145 Sanntidsprogrammering
 liveshare: 
 
 
+---[Gjort onsdag 28/2]---
+- Hente ut to siste siffer i prosessIDen (variabelnavn eleviId i main) som en integer og kaller variabelen for processID:
+	+ processID, err := strconv.Atoi(eleviId[len(eleviId)-2:])
+ 	+ Atoi returnerer to variabler, derfor må err også være der ^.
 
 
 ---[Plan for onsdag 28/2]---
