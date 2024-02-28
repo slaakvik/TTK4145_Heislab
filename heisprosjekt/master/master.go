@@ -12,39 +12,29 @@ import (
 -------------------------------------------------------
 */
 
-/**
- * @struct
- *
- */
-
-var MasterID string
 
 /**
  * @func DetermineMaster is not assigning or making a master, it only determines who of the peers should be assigned
  *
  */
-func DetermineMaster(p peers.PeerUpdate) int {
-	var lowestPeer int = 0
-	for i, v := range p.Peers {
-		if v < p.Peers[lowestPeer] {
-			lowestPeer = i
-		}
-	}
-	return lowestPeer
+func DetermineMaster(p peers.PeerUpdate, masterID *string) {
+	*masterID = p.Peers[0]
 }
 
 /**
- * @func
+ * @func ChechIfMasterExists checks whenever master exists or not and returns a bool.
  *
  */
-func MakeMaster(p peers.PeerUpdate) {
-	var lowestPeer int
-	var newMasterID string
-
-	lowestPeer = DetermineMaster(p)
-	newMasterID = p.Peers[lowestPeer]
-	fmt.Printf("%s is Master\n", newMasterID)
+func ChechIfMasterExists(masterID string) bool {
+	return masterID != ""
 }
 
+/**
+ * @func PrintMaster printes the master.
+ *
+ */
+func PrintMaster(masterID string) {
+	fmt.Printf("%s is Master\n", masterID)
+}
 
 

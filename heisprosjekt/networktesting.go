@@ -6,15 +6,18 @@ import (
 		"Heis/elevator"
 		"Heis/fsm"
 	*/
-	"Heis/network/peers"
-	"Heis/network/localip"
 	"Heis/master"
+	"Heis/slave"
+	"Heis/network/localip"
+	"Heis/network/peers"
 	"flag"
 	"fmt"
 	"os"
 )
 
 func main() {
+	var masterID string = ""
+	var slavesID []string
 
 	var id string
 	flag.StringVar(&id, "id", "", "id of this peer")
@@ -36,12 +39,17 @@ func main() {
 	go peers.Receiver(15647, peerUpdateRx)
 
 	for {
-
-		select{
-		case p:= <-peerUpdateRx:
+		select {
+		case p := <-peerUpdateRx:
 			peers.PrintUpdatedPeers(p)
-			if master.MasterID == ""{
-				master.MakeMaster(p)
+			if master.ChechIfMasterExists(masterID) {
+				slave.MakeSlaves(p, &slavesID)
+				slave.PrintSlaves(slavesID)
+				master.PrintMaster(masterID)
+				// slave functions
+			} else {
+				master.DetermineMaster(p, &masterID)
+				master.PrintMaster(masterID)
 			}
 		}
 	}
