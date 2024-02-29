@@ -36,9 +36,11 @@ func Stop_functionality(stop bool, elev elevator.Elevator) {
 	}
 }
 
-func OnInitBetweenFloors(elev *elevator.Elevator) {
+func OnInitBetweenFloors(elev elevator.Elevator) elevator.Elevator {
+
 	elevio.SetMotorDirection(elevio.MD_Down)
 	elev.Behaviour = elevator.EB_Moving
+	return elev
 }
 
 func setAllLights(elev elevator.Elevator) {

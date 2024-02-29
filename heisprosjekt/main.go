@@ -26,7 +26,7 @@ func main() {
 
 	//_________________________________________________________________________________________________
 
-	//heisann, din gamle ørn11!
+	//heisann, din gamle ørn12!
 
 	_numFloors := elevio.NumFloors
 	//_numButtons := elevio.NumButtons
@@ -64,7 +64,7 @@ func main() {
 	//elevator.Elevator_print(elev)
 
 	if elevio.GetFloor() == -1 {
-		fsm.OnInitBetweenFloors(&elev)
+		elev = fsm.OnInitBetweenFloors(elev)
 	}
 
 	for {
