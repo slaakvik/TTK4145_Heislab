@@ -14,6 +14,10 @@ liveshare:
    
 
 
+- NY IDE:
+  + ha master som en egen kanal, hvor man kan lese master, og endre master gjennom kanalen. Da sikrer man synkronisering
+  + 
+
 
 
 
