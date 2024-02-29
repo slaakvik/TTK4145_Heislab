@@ -7,9 +7,9 @@ import (
 		"Heis/fsm"
 	*/
 	"Heis/master"
-	"Heis/slave"
 	"Heis/network/localip"
 	"Heis/network/peers"
+	"Heis/slave"
 	"flag"
 	"fmt"
 	"os"
@@ -42,15 +42,16 @@ func main() {
 		select {
 		case p := <-peerUpdateRx:
 			peers.PrintUpdatedPeers(p)
-			if master.ChechIfMasterExists(masterID) {
-				slave.MakeSlaves(p, &slavesID)
+			if master.ChechIfMasterIsEmpty(masterID) || master.CheckIfMasterIsLost(masterID, p) {
+				master.DetermineMaster(&masterID, p)
+				master.PrintMaster(masterID)
+				/* slave.MakeSlaves(p, &slavesID)
 				slave.PrintSlaves(slavesID)
-				master.PrintMaster(masterID)
+				master.PrintMaster(masterID) */
 				// slave functions
-			} else {
-				master.DetermineMaster(p, &masterID)
-				master.PrintMaster(masterID)
 			}
+			slave.MakeSlaves(&slavesID, p)
+			slave.PrintSlaves(slavesID)
 		}
 	}
 }

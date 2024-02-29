@@ -12,21 +12,34 @@ import (
 -------------------------------------------------------
 */
 
-
 /**
  * @func DetermineMaster is not assigning or making a master, it only determines who of the peers should be assigned
  *
  */
-func DetermineMaster(p peers.PeerUpdate, masterID *string) {
+func DetermineMaster(masterID *string, p peers.PeerUpdate) {
 	*masterID = p.Peers[0]
 }
 
 /**
- * @func ChechIfMasterExists checks whenever master exists or not and returns a bool.
+ * @func ChechIfMasterIsLost checks if master is lost. Return true if it is lost.
  *
  */
-func ChechIfMasterExists(masterID string) bool {
-	return masterID != ""
+func CheckIfMasterIsLost(masterID string, p peers.PeerUpdate) bool {
+	for _, lostPeer := range p.Lost {
+		if lostPeer == masterID {
+			fmt.Printf("Master is lost!\n")
+			return true
+		}
+	}
+	return false
+}
+
+/**
+ * @func ChechIfMasterIsEmpty checks if the masterID is empty. Returns true if it is.
+ *
+ */
+func ChechIfMasterIsEmpty(masterID string) bool {
+	return masterID == ""
 }
 
 /**
@@ -34,7 +47,5 @@ func ChechIfMasterExists(masterID string) bool {
  *
  */
 func PrintMaster(masterID string) {
-	fmt.Printf("%s is Master\n", masterID)
+	fmt.Printf("Master: %s\n", masterID)
 }
-
-
