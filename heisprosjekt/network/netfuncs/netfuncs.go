@@ -1,6 +1,7 @@
 package netfuncs
 
 import (
+	"Heis/elevator"
 	"Heis/network/localip"
 	"Heis/network/peers"
 	"flag"
@@ -11,6 +12,7 @@ import (
 
 type HelloMsg struct {
 	Message string
+	elev    elevator.Elevator
 	Iter    int
 }
 
@@ -40,8 +42,8 @@ func PrintPeerUpdate(p peers.PeerUpdate) {
 	fmt.Printf("  Lost:     %q\n", p.Lost)
 }
 
-func Bcast_message(ch chan HelloMsg, id string) {
-	message := HelloMsg{"Hello from " + id, 0}
+func Bcast_message(ch chan HelloMsg, elev elevator.Elevator, id string) {
+	message := HelloMsg{"Hello from " + id, elev, 0}
 	for {
 		message.Iter++
 		ch <- message

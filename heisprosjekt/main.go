@@ -26,7 +26,7 @@ func main() {
 
 	//_________________________________________________________________________________________________
 
-	//heisann, din gamle ørn10!
+	//heisann, din gamle ørn11!
 
 	_numFloors := elevio.NumFloors
 	//_numButtons := elevio.NumButtons
@@ -58,7 +58,7 @@ func main() {
 	go bcast.Transmitter(16523, ElevatorTx)
 	go bcast.Receiver(16523, ElevatorRx)
 
-	go netfuncs.Bcast_message(ElevatorTx, eleviId)
+	go netfuncs.Bcast_message(ElevatorTx, elev, eleviId)
 
 	fmt.Printf("Started!\n")
 	//elevator.Elevator_print(elev)

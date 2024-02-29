@@ -60,3 +60,40 @@ func Elevator_print(es Elevator) {
 	}
 	fmt.Println("  +--------------------+")
 }
+
+func GetCabCalls(elev Elevator) [elevio.NumFloors]bool {
+	cabRequests := [elevio.NumFloors]bool{false, false, false, false}
+	for f := 0; f < elevio.NumFloors; f++ {
+		cabRequests[f] = elev.Requests[f][elevio.NumButtons-1]
+	}
+	return cabRequests
+}
+
+func GetHallCalls(elev Elevator) [elevio.NumFloors][2]bool {
+	HallCalls := [elevio.NumFloors][2]bool{{false, false},
+		{false, false},
+		{false, false},
+		{false, false}}
+
+	for f := 0; f < elevio.NumFloors; f++ {
+		for b := 0; b < (elevio.NumButtons - 1); b++ {
+			HallCalls[f][b] = elev.Requests[f][b]
+		}
+	}
+	return HallCalls
+}
+
+func MergeHallAndCabCall(cabs []bool, halls [][2]bool) [elevio.NumFloors][elevio.NumButtons]bool {
+	requests := [elevio.NumFloors][elevio.NumButtons]bool{{false, false, false},
+		{false, false, false},
+		{false, false, false},
+		{false, false, false}}
+
+	for f := 0; f < elevio.NumFloors; f++ {
+		for b := 0; b < (elevio.NumButtons - 1); b++ {
+			requests[f][b] = halls[f][b]
+		}
+		requests[f][elevio.NumButtons-1] = cabs[f]
+	}
+	return requests
+}
