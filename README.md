@@ -5,6 +5,8 @@ liveshare:
 Må endre alt som er skrevet som pass by reference. Bør istedet la funksjonene våre kun gjøre utregninger, også endre på heisen vår i main hovedsakelig. 
 Kanskje kalle på hardware i fsm fortsatt? så lenge vi kun gjør det et sted så gjør det det enklere å debugge. 
 
+Imperative shell functional core.
+
 ---[Gjort torsdag 29/2]---
 Påbegynt funksjon i cost_fns.go som itererer gjennom en array av heisstructs og lager en felles hall call-matrise gjennom or-funksjoner.
 Neste steg er å iterere gjennom heisene sine states og generere inputen som trengs til HRAInput, og dermed kan brukes i HRA_funcs-funksjonen.
