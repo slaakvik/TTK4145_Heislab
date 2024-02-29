@@ -3,16 +3,15 @@ Heislab i emnet TTK4145 Sanntidsprogrammering
 liveshare: 
 
 
+---[Plan for neste gang]---
 
-Heislab i emnet TTK4145 Sanntidsprogrammering liveshare:
-
----[Plan for onsdag 28/2]---
-
-    Lage flow-chart for systemet, for å sjekke ulike feil eller tilfeller som kan oppstå. Dette skaper viktig oversikt.
-
-    Master-Slave modulene:
-        Endre på funksjonen DetermineMaster(), slik at den velger det første elementet i p.Peers til å være master. Resterende blir slaver, hvorav den "første" slaven, altså det andre elementet, blir backup for master.
-        Skal MasterID være slik den er nå? Er det andre måter dette kan gjøres på?
+- noe er galt med master-slave logikken. Master var forskjellig i to av tre terminaler etter at jeg startet opp tre terminaler.
+- tanke: nå er logikken litt mer overordnet? Altså litt mer fugleperspektiv over alle heisene, og ikke synspunkt fra hver enkelt heis? 
+  Dette kan være problematisk?
+- må gå et steg videre og definere litt mer spesiell oppførsel for master og slave. Hvis man er master, hva innebærer det? Hvis man er slave, hva innebærer det?
+  Man må få tydelig spesifisert oppførsel etter at man har startet opp og blitt tildelt en rolle. Det som er implementert nå skal bare sørge for at alle nye som kobles til nettet
+  skal få tildelt en rolle, og at dersom noen forsvinner, så skal man håndtere det. 
+   
 
 
 
