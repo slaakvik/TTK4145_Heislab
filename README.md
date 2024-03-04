@@ -25,7 +25,8 @@ liveshare:
 
 
 
-
+En siste:
+- prøv i testClient å skrive elevatorCh<-elev for å skrive elev til kanalen
 
 
 
