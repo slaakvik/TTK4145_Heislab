@@ -3,20 +3,26 @@ Heislab i emnet TTK4145 Sanntidsprogrammering
 liveshare: 
 
 
----[Plan for neste gang]---
+---[Plan for neste gang]---'
+- vi diskuterer hva som gjennstår og hva som trengs
+- vi må først avklare hva vi skal gjøre i dag, konkret.
+- må prøve å bygge TCP forbindelse "automatisk" dersom peersa er på nettet:
+    + hente ut IP-adresse og prosess-id kan er funksjoner som trengs og bør lages
+    + TCP: må sende ack for hver melding som sendes? I allfall med tanke på "ordre utført"
+    + 
 
-- noe er galt med master-slave logikken. Master var forskjellig i to av tre terminaler etter at jeg startet opp tre terminaler.
-- tanke: nå er logikken litt mer overordnet? Altså litt mer fugleperspektiv over alle heisene, og ikke synspunkt fra hver enkelt heis? 
-  Dette kan være problematisk?
-- må gå et steg videre og definere litt mer spesiell oppførsel for master og slave. Hvis man er master, hva innebærer det? Hvis man er slave, hva innebærer det?
-  Man må få tydelig spesifisert oppførsel etter at man har startet opp og blitt tildelt en rolle. Det som er implementert nå skal bare sørge for at alle nye som kobles til nettet
-  skal få tildelt en rolle, og at dersom noen forsvinner, så skal man håndtere det. 
    
+- ting jeg kommer på:
+  + primary-backup logikk og automatikk: master er primary, og en "random" annen heis er backup
+        -- tanke: hva skjer med backup'ene når eksempelvis to "individulle heissystemer" merges sammen?
+  + master-slave logikk
+  + cost-funksjonen må læres å brukes
+        -- tanke: er det best at cost-funksjonen brukes av alle heiser uansett? selv enkeltheiser? intuitivt tenker jeg nei. Virker kronglete og                       unødvendig.
+  + fortsatt litt som gjenstår på TCP, men det er på vei.
+  + vi burde gå gjennom main og bestemme oss for hva som trengs å være der til nå, og hva vi evt kan flytte til andre filer slik at koden blir mer      oversiktlig.
+  + order og struktur er veldig viktig!
 
 
-- NY IDE:
-  + ha master som en egen kanal, hvor man kan lese master, og endre master gjennom kanalen. Da sikrer man synkronisering
-  + 
 
 
 
