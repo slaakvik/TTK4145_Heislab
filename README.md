@@ -1,4 +1,4 @@
-# TTK4145-Heislab_GuttaHeiser
+# TTK4145-Heislab
 Heislab i emnet TTK4145 Sanntidsprogrammering
 liveshare: 
 
