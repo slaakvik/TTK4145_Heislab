@@ -22,3 +22,4 @@ func MakeSlaves(slavesID *[]string, p peers.PeerUpdate) {
 func PrintSlaves(slavesID []string) {
 	fmt.Printf("Slaves:   %q\n", slavesID)
 }
+
