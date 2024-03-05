@@ -3,6 +3,7 @@ package master
 import (
 	"Heis/network/peers"
 	"fmt"
+	"strconv"
 )
 
 /*
@@ -13,11 +14,28 @@ import (
 */
 
 /**
- * @func DetermineMaster is not assigning or making a master, it only determines who of the peers should be assigned
+ * @func ChooseMaster is not assigning or making a master, it only chooses who of the peers should be assigned, which is the peer with the lowest processID
  *
  */
-func DetermineMaster(masterID *string, p peers.PeerUpdate) {
-	*masterID = p.Peers[0]
+func ChooseMaster(peersProcessId []string) (string, error) {
+	var SmallestProcessId, err = strconv.Atoi(peersProcessId[0])
+	if err != nil {
+		fmt.Printf("[error]: error converting string to int: %s\n", err)
+		return "", err
+	}
+	var SmallestProcessIdIndex = 0
+	for i, peer_str := range peersProcessId {
+		peer_int, err := strconv.Atoi(peer_str)
+		if err != nil {
+			fmt.Printf("[error]: error converting string to int: %s\n", err)
+			return "", err
+		}
+		if peer_int < SmallestProcessId {
+			SmallestProcessId = peer_int
+			SmallestProcessIdIndex = i
+		}
+	}
+	return peersProcessId[SmallestProcessIdIndex], nil
 }
 
 /**

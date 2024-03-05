@@ -55,8 +55,10 @@ func main() {
 		case data := <-peerUpdateRx:
 			peers.PeersIp = peers.ExtractIpFromPeers(data)
 			peers.PrintUpdatedPeers(data)
-			go tcp.Receive(tcp.CONN_PORT, peers.PeersIp[0], elevatorRx)
-			go tcp.Transmit(tcp.CONN_PORT, peers.PeersIp[0], elev)
+			for _, peerIp := range peers.PeersIp {
+				go tcp.Receive(tcp.CONN_PORT, peerIp, elevatorRx)
+				go tcp.Transmit(tcp.CONN_PORT, peerIp, elev)
+			}
 			time.Sleep(2 * time.Second)
 
 		case data := <-elevatorRx:
