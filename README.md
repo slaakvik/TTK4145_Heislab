@@ -7,9 +7,17 @@ Kanskje kalle på hardware i fsm fortsatt? så lenge vi kun gjør det et sted s�
 
 Imperative shell functional core.
 
+
+Tirsdag 5/3:
+cost function kjøres for hver nye etasje. må få heisen til å kjøre cost function og lese den for å finne ut av sine ordre. foreløpig kjører ikke heisen cost function. cost funksjonen kjøres, men eneste vi gjør med resultatet er å printe. må få det inn i request listen til heisen. må altså endre litt på onrequestbuttonpress blandt annet. 
+
+Problem med individuell heis: Dersom vi får hall call både opp og ned i samme etasje, og ikke har andre requests, vil heisen først cleare i den retningen den gikk i, deretter begynne å bevege seg i motsatt retning uten å cleare ordren og fortsatt tilsynelatende ha døren åpen. klarer da ikke å ta inn nye ordre og beveger seg opp/ned helt til det ikke går mer. 
+
 ---[Gjort tirsdag 5/3]---
 Følgende kode slår sammen lokal ip (siste tre siffer) og prosess-id (5 siffer) til en ny string.
 Siden det er string kan det kanskje funke å bare ta hele ipv4-stringen + prosess-id.
+
+
 
 ```Go
 import (
