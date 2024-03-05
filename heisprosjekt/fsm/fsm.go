@@ -4,18 +4,50 @@ import (
 	"Heis/driver-go/elevio"
 	"Heis/elevator"
 	"Heis/requests"
+	"fmt"
 	"time"
 )
 
 // Finite state machine
 
+func FSM(buttons chan elevio.ButtonEvent, floors chan int, stop chan bool, obstr chan bool) {
+	elev := elevator.InitElev()
+
+	if elevio.GetFloor() == -1 {
+		elev = onInitBetweenFloors(elev)
+		elevator.Elevator_print(elev)
+	}
+	for {
+		//elevator.Elevator_print(elev)
+		//fmt.Print(eleviId)
+		select {
+		case a := <-buttons:
+			fmt.Printf("Button: %+v\n", a)
+			onRequestButtonPress(&elev, a.Floor, a.Button)
+
+		case a := <-floors: // a er etasjen heisen er i
+			fmt.Printf("Floor: %+v\n", a)
+			onFloorArrival(&elev, a)
+
+		case a := <-stop:
+			fmt.Printf("Stop button: %+v\n", a)
+			// fsm.Fsm_onStopButtonPress(&elev)
+			stop_functionality(a, elev)
+
+		case a := <-obstr:
+			fmt.Printf("Obstruction %+v\n", a)
+			obstruction_functionality(a, elev)
+		}
+	}
+}
+
 // Timer goroutine
-func FSM_DoorTimer( /*elev *elevator.Elevator,*/ quit chan int) { // Door opens for three seconds
+func doorTimer( /*elev *elevator.Elevator,*/ quit chan int) { // Door opens for three seconds
 	time.Sleep(3 * time.Second)
 	quit <- 1
 }
 
-func Obstruction_functionality(obstruct bool, elev elevator.Elevator) {
+func obstruction_functionality(obstruct bool, elev elevator.Elevator) {
 	if obstruct {
 		elevio.SetMotorDirection(elevio.MD_Stop)
 		if elevio.GetFloor() != -1 {
@@ -26,7 +58,7 @@ func Obstruction_functionality(obstruct bool, elev elevator.Elevator) {
 		setAllLights(elev)
 	}
 }
-func Stop_functionality(stop bool, elev elevator.Elevator) {
+func stop_functionality(stop bool, elev elevator.Elevator) {
 	if stop {
 		elevio.SetMotorDirection(elevio.MD_Stop)
 		elevio.SetStopLamp(true)
@@ -36,7 +68,7 @@ func Stop_functionality(stop bool, elev elevator.Elevator) {
 	}
 }
 
-func OnInitBetweenFloors(elev elevator.Elevator) elevator.Elevator {
+func onInitBetweenFloors(elev elevator.Elevator) elevator.Elevator {
 
 	elevio.SetMotorDirection(elevio.MD_Down)
 	elev.Behaviour = elevator.EB_Moving
@@ -54,7 +86,7 @@ func setAllLights(elev elevator.Elevator) {
 
 }
 
-func OnRequestButtonPress(elev *elevator.Elevator, btn_floor int, btn_type elevio.ButtonType) {
+func onRequestButtonPress(elev *elevator.Elevator, btn_floor int, btn_type elevio.ButtonType) {
 
 	// fmt.Printf("\n\n%s(%d, %s)\n", "fsm_onRequestButtonPress", btnFloor, btnType.toString())
 	// elevator_print(elevator)
@@ -66,10 +98,10 @@ func OnRequestButtonPress(elev *elevator.Elevator, btn_floor int, btn_type elevi
 
 			setAllLights(*elev)
 			quit := make(chan int)
-			go FSM_DoorTimer(quit)
+			go doorTimer(quit)
 
 			<-quit
-			*elev = OnDoorTimeout(*elev)
+			*elev = onDoorTimeout(*elev)
 
 			// elev.Behaviour = elevator.EB_Idle
 			// elevio.SetDoorOpenLamp(0)
@@ -86,9 +118,9 @@ func OnRequestButtonPress(elev *elevator.Elevator, btn_floor int, btn_type elevi
 			elev.Behaviour = elevator.EB_DoorOpen
 			setAllLights(*elev)
 			quit := make(chan int)
-			go FSM_DoorTimer(quit)
+			go doorTimer(quit)
 			<-quit
-			*elev = OnDoorTimeout(*elev)
+			*elev = onDoorTimeout(*elev)
 
 		} else {
 			elev.Requests[btn_floor][btn_type] = true
@@ -137,7 +169,7 @@ func OnRequestButtonPress(elev *elevator.Elevator, btn_floor int, btn_type elevi
 
 // }
 
-func OnDoorTimeout(elev elevator.Elevator) elevator.Elevator {
+func onDoorTimeout(elev elevator.Elevator) elevator.Elevator {
 
 	//printf("\n\n%s()\n", __FUNCTION__);
 	//elevator_print(elevator);
@@ -146,14 +178,14 @@ func OnDoorTimeout(elev elevator.Elevator) elevator.Elevator {
 	pair := requests.Requests_chooseDirection(elev)
 	elev.Dirn = pair.Dirn
 	elev.Behaviour = pair.Behaviour
-	setAllLights(elev) //@ need to rewrite this function. Hvorfor er denne funksjonen her i det hele tatt?
-	elevio.SetMotorDirection(elev.Dirn)
+	setAllLights(elev)                  //@ need to rewrite this function. Hvorfor er denne funksjonen her i det hele tatt?
+	elevio.SetMotorDirection(elev.Dirn) //Det er her det skjærer seg (?), den klarer ikke å ha to hall calls i samme etasje, og ingen andre requests.
 
 	//fmt.Println("\nNew state:")
 	//elevator.Elevator_print(*elev)
 	return elev
 }
-func OnFloorArrival(elev *elevator.Elevator, newFloor int) { //elevptr
+func onFloorArrival(elev *elevator.Elevator, newFloor int) { //elevptr
 	//printf("\n\n%s(%d)\n", __FUNCTION__, newFloor);
 	//elevator_print(elevator);
 	elev.Floor = newFloor
@@ -167,9 +199,9 @@ func OnFloorArrival(elev *elevator.Elevator, newFloor int) { //elevptr
 			elev.Behaviour = elevator.EB_DoorOpen
 			setAllLights(*elev)
 			quit := make(chan int)
-			go FSM_DoorTimer(quit)
+			go doorTimer(quit)
 			<-quit
-			*elev = OnDoorTimeout(*elev)
+			*elev = onDoorTimeout(*elev)
 			//elevio.SetDoorOpenLamp(true)
 			// elev = requests.Requests_clearAtCurrentFloor(*elev)
 			//requests.Requests_clearAtCurrentFloor(elev)

@@ -10,6 +10,18 @@ import (
 	"time"
 )
 
+func Network_FSM(peerChan chan peers.PeerUpdate, peerTX chan bool) {
+	for {
+		select {
+		case a := <-peerChan:
+			//fmt.Printf("%+v\n", a)
+			printPeerUpdate(a)
+			// case a := <-ElevatorRx:
+			// 	fmt.Printf("Received: %+v\n", a)
+		}
+	}
+}
+
 type HelloMsg struct {
 	Message string
 	elev    elevator.Elevator
@@ -35,7 +47,7 @@ func InitNet() string {
 	return id
 }
 
-func PrintPeerUpdate(p peers.PeerUpdate) {
+func printPeerUpdate(p peers.PeerUpdate) {
 	fmt.Printf("Peer update:\n")
 	fmt.Printf("  Peers:    %q\n", p.Peers)
 	fmt.Printf("  New:      %q\n", p.New)
