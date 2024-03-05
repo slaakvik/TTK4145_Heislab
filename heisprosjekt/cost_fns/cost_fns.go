@@ -1,6 +1,7 @@
 package cost_fns
 
 import (
+	"Heis/elevator"
 	"encoding/json"
 	"fmt"
 	"os/exec"
@@ -21,22 +22,41 @@ type HRAInput struct {
 	States       map[string]HRAElevState `json:"states"`
 }
 
-func InputToCost() HRAInput {
+// func InputToCost() HRAInput {
+// 	input := HRAInput{
+// 		HallRequests: [][2]bool{{false, false}, {true, false}, {false, false}, {false, true}},
+// 		States: map[string]HRAElevState{
+// 			"one": HRAElevState{
+// 				Behavior:    "moving",
+// 				Floor:       2,
+// 				Direction:   "up",
+// 				CabRequests: []bool{false, false, false, true},
+// 			},
+// 			"two": HRAElevState{
+// 				Behavior:    "idle",
+// 				Floor:       0,
+// 				Direction:   "stop",
+// 				CabRequests: []bool{false, false, false, false},
+// 			},
+// 		},
+// 	}
+// 	return input
+// }
+
+func elevToHRAElevState(elev elevator.Elevator) HRAElevState {
+	return HRAElevState{
+		Behavior:    elevator.EB_ToString(elev.Behaviour),
+		Floor:       elev.Floor,
+		Direction:   elevator.MD_ToString(elev.Dirn),
+		CabRequests: elevator.GetCabCalls(elev),
+	}
+}
+
+func InputToCost(elev elevator.Elevator) HRAInput {
 	input := HRAInput{
-		HallRequests: [][2]bool{{false, false}, {true, false}, {false, false}, {false, true}},
+		HallRequests: elevator.GetHallCalls(elev),
 		States: map[string]HRAElevState{
-			"one": HRAElevState{
-				Behavior:    "moving",
-				Floor:       2,
-				Direction:   "up",
-				CabRequests: []bool{false, false, false, true},
-			},
-			"two": HRAElevState{
-				Behavior:    "idle",
-				Floor:       0,
-				Direction:   "stop",
-				CabRequests: []bool{false, false, false, false},
-			},
+			"one": elevToHRAElevState(elev),
 		},
 	}
 	return input

@@ -106,16 +106,16 @@ func Requests_shouldClearImmediately(e elevator.Elevator, btn_floor int, btn_typ
 	} //Må man ha klammeparentes her?
 }
 
-func Requests_clearAtCurrentFloor(e *elevator.Elevator) { //gjorde den til void istedenfor elevator.Elevator
+func Requests_clearAtCurrentFloor(e elevator.Elevator) elevator.Elevator { //gjorde den til void istedenfor elevator.Elevator
 	e.Requests[e.Floor][elevio.BT_Cab] = false
 	switch e.Dirn {
 	case elevio.MD_Up:
-		if !requests_above(*e) && !e.Requests[e.Floor][elevio.BT_HallUp] {
+		if !requests_above(e) && !e.Requests[e.Floor][elevio.BT_HallUp] {
 			e.Requests[e.Floor][elevio.BT_HallDown] = false
 		}
 		e.Requests[e.Floor][elevio.BT_HallUp] = false
 	case elevio.MD_Down:
-		if !requests_below(*e) && !e.Requests[e.Floor][elevio.BT_HallDown] {
+		if !requests_below(e) && !e.Requests[e.Floor][elevio.BT_HallDown] {
 			e.Requests[e.Floor][elevio.BT_HallUp] = false
 		}
 		e.Requests[e.Floor][elevio.BT_HallDown] = false
@@ -124,5 +124,5 @@ func Requests_clearAtCurrentFloor(e *elevator.Elevator) { //gjorde den til void 
 		e.Requests[e.Floor][elevio.BT_HallUp] = false
 		e.Requests[e.Floor][elevio.BT_HallDown] = false
 	}
-	//return *e
+	return e
 }

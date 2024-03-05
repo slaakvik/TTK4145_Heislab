@@ -5,6 +5,7 @@ import (
 	"Heis/driver-go/elevio"
 	"Heis/elevator"
 	"Heis/fsm"
+
 	"Heis/network/bcast"
 	"Heis/network/netfuncs"
 	"Heis/network/peers"
@@ -19,10 +20,6 @@ import (
 //_________________________________________________________________________________________________
 
 func main() {
-
-	input := cost_fns.InputToCost()
-
-	cost_fns.HRA_funcs(input)
 
 	//_________________________________________________________________________________________________
 
@@ -61,10 +58,14 @@ func main() {
 	go netfuncs.Bcast_message(ElevatorTx, elev, eleviId)
 
 	fmt.Printf("Started!\n")
+	//cost function test:
+	input := cost_fns.InputToCost(elev)
+	cost_fns.HRA_funcs(input)
 	//elevator.Elevator_print(elev)
 
 	if elevio.GetFloor() == -1 {
-		fsm.OnInitBetweenFloors(&elev)
+		elev = fsm.OnInitBetweenFloors(elev)
+		elevator.Elevator_print(elev)
 	}
 
 	for {

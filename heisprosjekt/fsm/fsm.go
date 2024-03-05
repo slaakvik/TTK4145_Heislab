@@ -36,9 +36,12 @@ func Stop_functionality(stop bool, elev elevator.Elevator) {
 	}
 }
 
-func OnInitBetweenFloors(elev *elevator.Elevator) {
+func OnInitBetweenFloors(elev elevator.Elevator) elevator.Elevator {
+
 	elevio.SetMotorDirection(elevio.MD_Down)
 	elev.Behaviour = elevator.EB_Moving
+	elev.Dirn = elevio.MD_Down
+	return elev
 }
 
 func setAllLights(elev elevator.Elevator) {
@@ -66,7 +69,7 @@ func OnRequestButtonPress(elev *elevator.Elevator, btn_floor int, btn_type elevi
 			go FSM_DoorTimer(quit)
 
 			<-quit
-			OnDoorTimeout(elev)
+			*elev = OnDoorTimeout(*elev)
 
 			// elev.Behaviour = elevator.EB_Idle
 			// elevio.SetDoorOpenLamp(0)
@@ -85,7 +88,7 @@ func OnRequestButtonPress(elev *elevator.Elevator, btn_floor int, btn_type elevi
 			quit := make(chan int)
 			go FSM_DoorTimer(quit)
 			<-quit
-			OnDoorTimeout(elev)
+			*elev = OnDoorTimeout(*elev)
 
 		} else {
 			elev.Requests[btn_floor][btn_type] = true
@@ -102,7 +105,7 @@ func OnRequestButtonPress(elev *elevator.Elevator, btn_floor int, btn_type elevi
 			//time.Sleep(time.Duration(elev.DoorOpenDuration_s * float32(time.Second)))
 			//time.NewTimer(time.Duration(elev.DoorOpenDuration_s))
 
-			requests.Requests_clearAtCurrentFloor(elev) //kan dette ha noe å gjøre med at vi ikke klarer å motta bestillinger fra en etasje vi allerede er i?
+			*elev = requests.Requests_clearAtCurrentFloor(*elev) //kan dette ha noe å gjøre med at vi ikke klarer å motta bestillinger fra en etasje vi allerede er i?
 			//elev.Behaviour = elevator.EB_Idle
 
 		case elevator.EB_Moving:
@@ -117,23 +120,39 @@ func OnRequestButtonPress(elev *elevator.Elevator, btn_floor int, btn_type elevi
 	//fmt.Println("\nNew state:")
 }
 
-func OnDoorTimeout(elev *elevator.Elevator) {
+// func OnDoorTimeout(elev *elevator.Elevator) {
+
+// 	//printf("\n\n%s()\n", __FUNCTION__);
+// 	//elevator_print(elevator);
+
+// 	requests.Requests_clearAtCurrentFloor(elev)
+// 	pair := requests.Requests_chooseDirection(*elev)
+// 	elev.Dirn = pair.Dirn
+// 	elev.Behaviour = pair.Behaviour
+// 	setAllLights(*elev) //@ need to rewrite this function. Hvorfor er denne funksjonen her i det hele tatt?
+// 	elevio.SetMotorDirection(elev.Dirn)
+
+// 	//fmt.Println("\nNew state:")
+// 	//elevator.Elevator_print(*elev)
+
+// }
+
+func OnDoorTimeout(elev elevator.Elevator) elevator.Elevator {
 
 	//printf("\n\n%s()\n", __FUNCTION__);
 	//elevator_print(elevator);
 
-	requests.Requests_clearAtCurrentFloor(elev)
-	pair := requests.Requests_chooseDirection(*elev)
+	elev = requests.Requests_clearAtCurrentFloor(elev)
+	pair := requests.Requests_chooseDirection(elev)
 	elev.Dirn = pair.Dirn
 	elev.Behaviour = pair.Behaviour
-	setAllLights(*elev) //@ need to rewrite this function. Hvorfor er denne funksjonen her i det hele tatt?
+	setAllLights(elev) //@ need to rewrite this function. Hvorfor er denne funksjonen her i det hele tatt?
 	elevio.SetMotorDirection(elev.Dirn)
 
 	//fmt.Println("\nNew state:")
 	//elevator.Elevator_print(*elev)
-
+	return elev
 }
-
 func OnFloorArrival(elev *elevator.Elevator, newFloor int) { //elevptr
 	//printf("\n\n%s(%d)\n", __FUNCTION__, newFloor);
 	//elevator_print(elevator);
@@ -150,7 +169,7 @@ func OnFloorArrival(elev *elevator.Elevator, newFloor int) { //elevptr
 			quit := make(chan int)
 			go FSM_DoorTimer(quit)
 			<-quit
-			OnDoorTimeout(elev)
+			*elev = OnDoorTimeout(*elev)
 			//elevio.SetDoorOpenLamp(true)
 			// elev = requests.Requests_clearAtCurrentFloor(*elev)
 			//requests.Requests_clearAtCurrentFloor(elev)
