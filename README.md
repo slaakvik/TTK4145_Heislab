@@ -17,7 +17,7 @@ liveshare:
         -- tanke: hva skjer med backup'ene når eksempelvis to "individulle heissystemer" merges sammen?
   + master-slave logikk
   + cost-funksjonen må læres å brukes
-        -- tanke: er det best at cost-funksjonen brukes av alle heiser uansett? selv enkeltheiser? intuitivt tenker jeg nei. Virker kronglete og                       unødvendig.
+        -- tanke: er det best at cost-funksjonen brukes av alle heiser uansett? selv enkeltheiser? ja
   + fortsatt litt som gjenstår på TCP, men det er på vei.
   + vi burde gå gjennom main og bestemme oss for hva som trengs å være der til nå, og hva vi evt kan flytte til andre filer slik at koden blir mer      oversiktlig.
   + order og struktur er veldig viktig!

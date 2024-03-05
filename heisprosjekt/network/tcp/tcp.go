@@ -11,9 +11,8 @@ import (
  * This file contain functionality regarding TCP
  */
 
-
 /**
- * @struct TaggedJson is the struct we wish to convert the desired data into before it is transmitted. 
+ * @struct TaggedJson is the struct we wish to convert the desired data into before it is transmitted.
  * Reason: Enables easier transmission of different data types
  */
 type TaggedJson struct {
@@ -36,19 +35,17 @@ type Elevator struct {
 	Queue []int
 }
 
-
 /**
  * @var variables regarding the connections for the TCP.
  */
 const (
 	CONN_HOST = "localhost"
-	CONN_PORT = 80
+	CONN_PORT = 8081
 	CONN_TYPE = "tcp"
 )
 
-
 /**
- * @func Transmit makes a connection, encodes the desired data to json, and writes (sends to) it to the destination on address with port.
+ * @func Transmit makes a connection, encodes the desired data to json, and writes it to the destination on address with port.
  */
 func Transmit(port int, address string, data interface{}) {
 	conn, err := net.Dial(CONN_TYPE, fmt.Sprintf("%s:%d", address, port))
@@ -79,9 +76,8 @@ func Transmit(port int, address string, data interface{}) {
 	}
 }
 
-
 /**
- * @func Receive is listening for incoming data, and decodes the transmitted data from json to the data originally fed into the transmitter. 
+ * @func Receive is listening for incoming data, and decodes the transmitted data from json to the data originally fed into the transmitter.
  */
 func Receive(port int, address string, data ...interface{}) {
 	listener, err := net.Listen(CONN_TYPE, fmt.Sprintf("%s:%d", address, port))
@@ -147,11 +143,6 @@ func Receive(port int, address string, data ...interface{}) {
 			Chan: reflect.ValueOf(channel),
 			Send: reflect.Indirect(value),
 		}})
-
-		if err != nil {
-			fmt.Printf("[error] Failed to unmarshal with error: %v\n", err)
-			continue
-		}
 
 		//conn.Write([]byte("hei"))
 

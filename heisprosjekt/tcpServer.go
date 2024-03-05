@@ -28,9 +28,8 @@ func main() {
 		case data := <-houseCh:
 			fmt.Printf("[Received]: %v\n", data)
 		case data := <-elevatorCh:
-			fmt.Printf("NOE ER GALTY HERRR %v\n", data)
+			fmt.Printf("Heisen: %v\n", data)
 			//elevator.Elevator_print(data)
 		}
 	}
-
 }

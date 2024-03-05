@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -86,9 +87,31 @@ func Receiver(port int, peerUpdateCh chan<- PeerUpdate) {
 	}
 }
 
+// ---[what i have defined]---
 func PrintUpdatedPeers(p PeerUpdate) {
 	fmt.Printf("Peer update:\n")
 	fmt.Printf("  Peers:    %q\n", p.Peers)
 	fmt.Printf("  New:      %q\n", p.New)
 	fmt.Printf("  Lost:     %q\n", p.Lost)
 }
+
+var PeersIp []string
+var PeersProcessId []string
+
+func ExtractIpFromPeers(p PeerUpdate) []string {
+	for _, peer := range p.Peers {
+		data := strings.Split(peer, "-")
+		PeersIp = append(PeersIp, data[1])
+	}
+	return PeersIp
+}
+
+func ExtractProcessIdFromPeers(p PeerUpdate) []string {
+	for _, peer := range p.Peers {
+		data := strings.Split(peer, "-")
+		PeersProcessId = append(PeersProcessId, data[2])
+	}
+	return PeersProcessId
+}
+
+//---------------------------
