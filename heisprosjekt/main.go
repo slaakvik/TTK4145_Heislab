@@ -1,9 +1,9 @@
 package main
 
 import (
-	"Heis/cost_fns"
+	//"Heis/cost_fns"
 	"Heis/driver-go/elevio"
-	"Heis/elevator"
+	// "Heis/elevator"
 	"Heis/fsm"
 
 	"Heis/network/bcast"
@@ -23,14 +23,14 @@ func main() {
 
 	//_________________________________________________________________________________________________
 
-	//heisann, din gamle ørn11!
+	//heisann, din gamle ørn34!
 
 	_numFloors := elevio.NumFloors
 	//_numButtons := elevio.NumButtons
 	elevio.Init("localhost:15657", _numFloors)
 
 	//Initialiserer en heisstruct
-	elev := elevator.InitElev()
+	//elev := elevator.InitElev()
 
 	drv_buttons := make(chan elevio.ButtonEvent)
 	drv_floors := make(chan int)
@@ -55,46 +55,48 @@ func main() {
 	go bcast.Transmitter(16523, ElevatorTx)
 	go bcast.Receiver(16523, ElevatorRx)
 
-	go netfuncs.Bcast_message(ElevatorTx, elev, eleviId)
+	//go netfuncs.Bcast_message(ElevatorTx, elev, eleviId)
 
 	fmt.Printf("Started!\n")
 	//cost function test:
-	input := cost_fns.InputToCost(elev)
-	cost_fns.HRA_funcs(input)
+	// input := cost_fns.InputToCost(elev)
+	// cost_fns.HRA_funcs(input)
 	//elevator.Elevator_print(elev)
 
-	if elevio.GetFloor() == -1 {
-		elev = fsm.OnInitBetweenFloors(elev)
-		elevator.Elevator_print(elev)
-	}
+	// if elevio.GetFloor() == -1 {
+	// 	elev = fsm.OnInitBetweenFloors(elev)
+	// 	elevator.Elevator_print(elev)
+	// }
+	go fsm.FSM(drv_buttons, drv_floors, drv_stop, drv_obstr)
+	go netfuncs.Network_FSM(peerUpdateCh, peerTxEnable)
+	select {}
+	// for {
+	// 	//elevator.Elevator_print(elev)
+	// 	//fmt.Print(eleviId)
+	// 	select {
+	// 	// case a := <-drv_buttons:
+	// 	// 	fmt.Printf("Button: %+v\n", a)
+	// 	// 	fsm.OnRequestButtonPress(&elev, a.Floor, a.Button)
 
-	for {
-		//elevator.Elevator_print(elev)
-		//fmt.Print(eleviId)
-		select {
-		case a := <-drv_buttons:
-			fmt.Printf("Button: %+v\n", a)
-			fsm.OnRequestButtonPress(&elev, a.Floor, a.Button)
+	// 	// case a := <-drv_floors: // a er etasjen heisen er i
+	// 	// 	fmt.Printf("Floor: %+v\n", a)
+	// 	// 	fsm.OnFloorArrival(&elev, a)
 
-		case a := <-drv_floors: // a er etasjen heisen er i
-			fmt.Printf("Floor: %+v\n", a)
-			fsm.OnFloorArrival(&elev, a)
+	// 	// case a := <-drv_stop:
+	// 	// 	fmt.Printf("Stop button: %+v\n", a)
+	// 	// 	// fsm.Fsm_onStopButtonPress(&elev)
+	// 	// 	fsm.Stop_functionality(a, elev)
 
-		case a := <-drv_stop:
-			fmt.Printf("Stop button: %+v\n", a)
-			// fsm.Fsm_onStopButtonPress(&elev)
-			fsm.Stop_functionality(a, elev)
+	// 	// case a := <-drv_obstr:
+	// 	// 	fmt.Printf("Obstruction %+v\n", a)
+	// 	// 	fsm.Obstruction_functionality(a, elev)
 
-		case a := <-drv_obstr:
-			fmt.Printf("Obstruction %+v\n", a)
-			fsm.Obstruction_functionality(a, elev)
+	// 	case a := <-peerUpdateCh:
+	// 		//fmt.Printf("%+v\n", a)
+	// 		netfuncs.PrintPeerUpdate(a)
+	// 	case a := <-ElevatorRx:
+	// 		fmt.Printf("Received: %+v\n", a)
 
-		case a := <-peerUpdateCh:
-			//fmt.Printf("%+v\n", a)
-			netfuncs.PrintPeerUpdate(a)
-		case a := <-ElevatorRx:
-			fmt.Printf("Received: %+v\n", a)
-
-		}
-	}
+	// 	}
+	// }
 }
