@@ -3,6 +3,7 @@ package slave
 import (
 	"Heis/network/peers"
 	"fmt"
+	"strings"
 )
 
 /**
@@ -23,3 +24,24 @@ func PrintSlaves(slavesID []string) {
 	fmt.Printf("Slaves:   %q\n", slavesID)
 }
 
+
+
+func ChooseSlaves(p peers.PeerUpdate, slavesId []string, masterId string) []string {
+	for _, peer := range p.Peers{
+		if peer != masterId {
+			slavesId = append(slavesId, peer)
+		}
+	}
+	return slavesId
+}
+
+
+
+func ExtractIpFromSlaves(slavesId []string, slavesIp []string) []string {
+	//slavesIp = nil
+	for _, slave := range slavesId {
+		data := strings.Split(slave, "-")
+		slavesIp = append(slavesIp, data[1])
+	}
+	return slavesIp
+}

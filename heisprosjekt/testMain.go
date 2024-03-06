@@ -3,13 +3,14 @@ package main
 import (
 	"Heis/driver-go/elevio"
 	"Heis/elevator"
+	"Heis/master"
 	"Heis/network/localip"
 	"Heis/network/peers"
 	"Heis/network/tcp"
+	"Heis/slave"
 	"flag"
 	"fmt"
 	"os"
-	"time"
 )
 
 // this was just to make main smaller. Just temporary
@@ -27,6 +28,19 @@ func CheckId(id string) string {
 }
 
 func main() {
+
+	// Master and slaves
+	var MasterId string
+	//var MasterIp string ????? Why does it say not declared and used when I have used it??
+	var MasterProcessId string
+
+	var SlavesId []string
+	var SlavesIp []string
+
+	// Regarding the peers
+	var PeersIp []string
+	var PeersProcessId []string
+
 	// Regarding the elevator itself
 	_numFloors := elevio.NumFloors
 	elevio.Init("localhost:15657", _numFloors)
@@ -53,22 +67,48 @@ func main() {
 	for {
 		select {
 		case data := <-peerUpdateRx:
-			peers.PeersIp = peers.ExtractIpFromPeers(data)
 			peers.PrintUpdatedPeers(data)
-			for _, peerIp := range peers.PeersIp {
-				go tcp.Receive(tcp.CONN_PORT, peerIp, elevatorRx)
-				go tcp.Transmit(tcp.CONN_PORT, peerIp, elev)
-			}
-			time.Sleep(2 * time.Second)
 
+			PeersProcessId = peers.ExtractProcessIdFromPeers(data, PeersIp)
+			masterIdIndex, err := master.ChooseMasterIndex(PeersProcessId)
+			MasterId = master.ChooseMaster(masterIdIndex, data)
+			if err != nil {
+				fmt.Printf("[error] Error with choosing master %v", err)
+				return
+			}
+
+			fmt.Printf("Noe galt 1\n")
+			SlavesId = slave.ChooseSlaves(data, SlavesId, MasterId)
+			fmt.Printf("Her er master: %v\n", MasterId)
+
+			// Extracting the IP-adresses from the master and the slaves
+			SlavesIp = slave.ExtractIpFromSlaves(SlavesId, SlavesIp)
+			MasterIp := peers.ExtractIpFromPeer(MasterId)
+			
+			MasterProcessId = peers.ExtractProcessIdFromPeer(MasterId)
+			//var katt = os.Getpid()
+			if master.CheckIfYouAreMaster(MasterProcessId) {
+				fmt.Printf("HÆLLÆ 1\n")
+				for _, slaveIp := range SlavesIp {
+					go tcp.Transmit(tcp.CONN_PORT, slaveIp, elev)
+					go tcp.Receive(tcp.CONN_PORT, slaveIp, elevatorRx)
+				}
+			} else {
+				fmt.Printf("HÆLLÆ 2\n")
+				go tcp.Transmit(tcp.CONN_PORT, MasterIp, elev)
+				go tcp.Receive(tcp.CONN_PORT, MasterIp, elevatorRx)
+			} 
 		case data := <-elevatorRx:
 			fmt.Printf("Heisen: %v\n", data)
 		}
 	}
 }
 
+
+
+
 /** -----[Plan]-----
- * I will just say that element one in Peers is the master. This is just to have a master.
+ * 
  *
  *
  */

@@ -95,23 +95,34 @@ func PrintUpdatedPeers(p PeerUpdate) {
 	fmt.Printf("  Lost:     %q\n", p.Lost)
 }
 
-var PeersIp []string
-var PeersProcessId []string
 
-func ExtractIpFromPeers(p PeerUpdate) []string {
+func ExtractIpFromPeers(p PeerUpdate, peersIp []string) []string {
+	//peersIp = ""
 	for _, peer := range p.Peers {
 		data := strings.Split(peer, "-")
-		PeersIp = append(PeersIp, data[1])
+		peersIp = append(peersIp, data[1])
 	}
-	return PeersIp
+	return peersIp
 }
 
-func ExtractProcessIdFromPeers(p PeerUpdate) []string {
+func ExtractIpFromPeer(peer string) string{
+	data := strings.Split(peer, "-")
+	return data[1]
+}
+
+
+func ExtractProcessIdFromPeers(p PeerUpdate, peersProcessId []string) []string {
+	//peersProcessId = nil // maybe not the best solution, but I need to reset the slice every time to not just add new peer. Alternetively, we could just remove the lost peers.
 	for _, peer := range p.Peers {
 		data := strings.Split(peer, "-")
-		PeersProcessId = append(PeersProcessId, data[2])
+		peersProcessId = append(peersProcessId, data[2])
 	}
-	return PeersProcessId
+	return peersProcessId
+}
+
+func ExtractProcessIdFromPeer(peer string) string {
+	data := strings.Split(peer, "-")
+	return data[2]
 }
 
 //---------------------------
