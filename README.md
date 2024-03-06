@@ -2,6 +2,8 @@
 Heislab i emnet TTK4145 Sanntidsprogrammering
 liveshare: 
 
+Imperative shell functional core.
+
 
 Onsdag 6/3:
 Master slave logikk: 
@@ -13,12 +15,13 @@ Når heisen er master, skal den kjøre cost function når den mottar nye ordre, 
 Kanskje en if setning som sjekker if master, og hvis true så kjører den cost function, ellers, sender den ordren med en gang, resten blir vel ganske likt for alle heisene. Kanskje sende ordren til seg selv hvis master? Kan da få problemer dersom heisen ikke er kobblet til nettet. 
 Kanskje å la master kjøre cost function og sende oppdatert HRA til alle, men trenger ikke sende til seg selv i tillegg, siden man allerede har infoen. kanskje like greit å bare sende likevel, men ikke nødvendigvis bruke det?
 
+Hver heis gjør seg selv til master dersom den er alene på nettet. (siden den da har lavest prosessID av alle på nettet). Når en ny heis kobler på, skal heisene som er enkeltheiser gjøre seg selv til slave. dette vil gjøre at dersom en heis er master og har en slave, også kommer det en enkeltheis som er master, skal den heisen uten tilhørende slave bli slave selv. 
+dersom to enkeltheiser kobler på gjør de begge seg til slave. 
+Vi skal derfor alltid ha en sjekk som sjekker om vi har en master, hvis ikke, så skal den med lavest prosessID bli master. 
+
+stop og obstruction funksjonaliteten vår påvirker kun elevio (hardware), vi endrer ikke statesene til heisen vår, hvilket vil bety at vi ikke sender at heisen er obstructet mens den er det. 
 
 
-Må endre alt som er skrevet som pass by reference. Bør istedet la funksjonene våre kun gjøre utregninger, også endre på heisen vår i main hovedsakelig. 
-Kanskje kalle på hardware i fsm fortsatt? så lenge vi kun gjør det et sted så gjør det det enklere å debugge. 
-
-Imperative shell functional core.
 
 
 Tirsdag 5/3:
