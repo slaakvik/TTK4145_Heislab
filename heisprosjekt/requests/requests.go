@@ -106,7 +106,7 @@ func Requests_shouldClearImmediately(e elevator.Elevator, btn_floor int, btn_typ
 	} //Må man ha klammeparentes her?
 }
 
-func Requests_clearAtCurrentFloor(e elevator.Elevator) elevator.Elevator { //gjorde den til void istedenfor elevator.Elevator
+func Requests_clearAtCurrentFloor(e elevator.Elevator) elevator.Elevator { 
 	e.Requests[e.Floor][elevio.BT_Cab] = false
 	switch e.Dirn {
 	case elevio.MD_Up:

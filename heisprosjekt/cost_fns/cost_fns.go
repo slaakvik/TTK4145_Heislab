@@ -52,18 +52,17 @@ func elevToHRAElevState(elev elevator.Elevator) HRAElevState {
 	}
 }
 
-func InputToCost(elev elevator.Elevator) HRAInput {
+func InputToCost(elev elevator.Elevator, elevatorId string) HRAInput {
 	input := HRAInput{
 		HallRequests: elevator.GetHallCalls(elev),
 		States: map[string]HRAElevState{
-			"one": elevToHRAElevState(elev),
+			elevatorId: elevToHRAElevState(elev),
 		},
 	}
 	return input
 }
 
-func HRA_funcs(input HRAInput) {
-	hraExecutable := "hall_request_assigner"
+func HRA_funcs(input HRAInput, output *map[string][][2]bool, hraExecutable string) {
 
 	jsonBytes, err := json.Marshal(input)
 	if err != nil {
@@ -78,17 +77,24 @@ func HRA_funcs(input HRAInput) {
 		return
 	}
 
-	output := new(map[string][][2]bool)
 	err = json.Unmarshal(ret, &output)
 	if err != nil {
 		fmt.Println("json.Unmarshal error: ", err)
 		return
 	}
 
+}
+func GetCostOutput(input HRAInput) map[string][][2]bool {
+	hraExecutable := "hall_request_assigner"
+	output := new(map[string][][2]bool)
+
+	HRA_funcs(input, output, hraExecutable)
+
 	fmt.Printf("output: \n")
 	for k, v := range *output {
 		fmt.Printf("%6v :  %+v\n", k, v)
 	}
+	return *output
 }
 
 // func main() {

@@ -23,7 +23,7 @@ func main() {
 
 	//_________________________________________________________________________________________________
 
-	//heisann, din gamle ørn34!
+	//heisann, din gamle ørn36!
 
 	_numFloors := elevio.NumFloors
 	//_numButtons := elevio.NumButtons
@@ -57,6 +57,9 @@ func main() {
 
 	//go netfuncs.Bcast_message(ElevatorTx, elev, eleviId)
 
+	//Master slave
+	//isMaster := false
+
 	fmt.Printf("Started!\n")
 	//cost function test:
 	// input := cost_fns.InputToCost(elev)
@@ -67,36 +70,37 @@ func main() {
 	// 	elev = fsm.OnInitBetweenFloors(elev)
 	// 	elevator.Elevator_print(elev)
 	// }
-	go fsm.FSM(drv_buttons, drv_floors, drv_stop, drv_obstr)
+	go fsm.FSM(drv_buttons, drv_floors, drv_stop, drv_obstr, eleviId)
 	go netfuncs.Network_FSM(peerUpdateCh, peerTxEnable)
 	select {}
-	// for {
-	// 	//elevator.Elevator_print(elev)
-	// 	//fmt.Print(eleviId)
-	// 	select {
-	// 	// case a := <-drv_buttons:
-	// 	// 	fmt.Printf("Button: %+v\n", a)
-	// 	// 	fsm.OnRequestButtonPress(&elev, a.Floor, a.Button)
-
-	// 	// case a := <-drv_floors: // a er etasjen heisen er i
-	// 	// 	fmt.Printf("Floor: %+v\n", a)
-	// 	// 	fsm.OnFloorArrival(&elev, a)
-
-	// 	// case a := <-drv_stop:
-	// 	// 	fmt.Printf("Stop button: %+v\n", a)
-	// 	// 	// fsm.Fsm_onStopButtonPress(&elev)
-	// 	// 	fsm.Stop_functionality(a, elev)
-
-	// 	// case a := <-drv_obstr:
-	// 	// 	fmt.Printf("Obstruction %+v\n", a)
-	// 	// 	fsm.Obstruction_functionality(a, elev)
-
-	// 	case a := <-peerUpdateCh:
-	// 		//fmt.Printf("%+v\n", a)
-	// 		netfuncs.PrintPeerUpdate(a)
-	// 	case a := <-ElevatorRx:
-	// 		fmt.Printf("Received: %+v\n", a)
-
-	// 	}
-	// }
 }
+
+// for {
+// 	//elevator.Elevator_print(elev)
+// 	//fmt.Print(eleviId)
+// 	select {
+// 	// case a := <-drv_buttons:
+// 	// 	fmt.Printf("Button: %+v\n", a)
+// 	// 	fsm.OnRequestButtonPress(&elev, a.Floor, a.Button)
+
+// 	// case a := <-drv_floors: // a er etasjen heisen er i
+// 	// 	fmt.Printf("Floor: %+v\n", a)
+// 	// 	fsm.OnFloorArrival(&elev, a)
+
+// 	// case a := <-drv_stop:
+// 	// 	fmt.Printf("Stop button: %+v\n", a)
+// 	// 	// fsm.Fsm_onStopButtonPress(&elev)
+// 	// 	fsm.Stop_functionality(a, elev)
+
+// 	// case a := <-drv_obstr:
+// 	// 	fmt.Printf("Obstruction %+v\n", a)
+// 	// 	fsm.Obstruction_functionality(a, elev)
+
+// 	case a := <-peerUpdateCh:
+// 		//fmt.Printf("%+v\n", a)
+// 		netfuncs.PrintPeerUpdate(a)
+// 	case a := <-ElevatorRx:
+// 		fmt.Printf("Received: %+v\n", a)
+
+// 	}
+// }
