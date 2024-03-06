@@ -3,7 +3,6 @@ package master
 import (
 	"Heis/network/peers"
 	"fmt"
-	"os"
 	"strconv"
 )
 
@@ -75,11 +74,8 @@ func PrintMaster(masterId string) {
 }
 
 // Might have to change to check Ip adress aswell to check if peer is master
-func CheckIfYouAreMaster(masterProcessId string) bool {
-	processId := os.Getegid()
-	fmt.Printf("processId: %v\n", processId)
+func CheckIfYouAreMaster(masterProcessId string, processId int) bool {
 	masterId_int, err := strconv.Atoi(masterProcessId)
-	fmt.Printf("masterId_int: %v\n", masterId_int)
 	if err != nil {
 		fmt.Printf("[error] Error converting masterId to int %v\n", err)
 		//return

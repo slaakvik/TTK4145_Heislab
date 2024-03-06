@@ -27,11 +27,37 @@ func CheckId(id string) string {
 	return id
 }
 
+
+/**
+ * @var constant variables regarding the TCP 
+ * these ports can be made dynamicly by iteration through the p.Peers that are active on the netework.
+ * Then you know exactly how many ports to hold on to (for the master).
+ * M is short for "master" and S is short for "slave".
+ */
+const (
+	M_CONN_PORT_R1 = 50000
+	M_CONN_PORT_R2 = 50001
+	M_CONN_PORT_T1 = 50002 
+	M_CONN_PORT_T2 = 50003 
+
+	S_CONN_PORT_R1 = 5500
+	S_CONN_PORT_T1 = 5501
+	S_CONN_PORT_R2 = 5502
+	S_CONN_PORT_T2 = 5503
+)
+
+
+
+
 func main() {
+
+	//
+	var ProcessId = os.Getpid()
+	fmt.Printf("ProsessId er: %v\n", ProcessId)
 
 	// Master and slaves
 	var MasterId string
-	//var MasterIp string ????? Why does it say not declared and used when I have used it??
+	var MasterIp string 
 	var MasterProcessId string
 
 	var SlavesId []string
@@ -76,27 +102,24 @@ func main() {
 				fmt.Printf("[error] Error with choosing master %v", err)
 				return
 			}
-
-			fmt.Printf("Noe galt 1\n")
 			SlavesId = slave.ChooseSlaves(data, SlavesId, MasterId)
-			fmt.Printf("Her er master: %v\n", MasterId)
+			fmt.Printf("Master: %v\n", MasterId)
 
 			// Extracting the IP-adresses from the master and the slaves
 			SlavesIp = slave.ExtractIpFromSlaves(SlavesId, SlavesIp)
-			MasterIp := peers.ExtractIpFromPeer(MasterId)
+			MasterIp = peers.ExtractIpFromPeer(MasterId)
 			
 			MasterProcessId = peers.ExtractProcessIdFromPeer(MasterId)
 			//var katt = os.Getpid()
-			if master.CheckIfYouAreMaster(MasterProcessId) {
-				fmt.Printf("HÆLLÆ 1\n")
+			if master.CheckIfYouAreMaster(MasterProcessId, ProcessId) {
 				for _, slaveIp := range SlavesIp {
-					go tcp.Transmit(tcp.CONN_PORT, slaveIp, elev)
-					go tcp.Receive(tcp.CONN_PORT, slaveIp, elevatorRx)
+					go tcp.Transmit(M_CONN_PORT_T1, slaveIp, elev)
+					go tcp.Receive(M_CONN_PORT_R1, slaveIp, elevatorRx)
 				}
 			} else {
-				fmt.Printf("HÆLLÆ 2\n")
-				go tcp.Transmit(tcp.CONN_PORT, MasterIp, elev)
-				go tcp.Receive(tcp.CONN_PORT, MasterIp, elevatorRx)
+				fmt.Printf("Slave: %v\n", id)
+				go tcp.Receive(S_CONN_PORT_R1, MasterIp, elevatorRx)
+				go tcp.Transmit(S_CONN_PORT_T1, MasterIp, elev)
 			} 
 		case data := <-elevatorRx:
 			fmt.Printf("Heisen: %v\n", data)
@@ -108,7 +131,7 @@ func main() {
 
 
 /** -----[Plan]-----
- * 
+ * Må ha en variant som er for å kjøre TCP på en PC, og en annen for flere. Dette er bare for å gjøre testing lettere og mer fleksibelt. 
  *
  *
  */
