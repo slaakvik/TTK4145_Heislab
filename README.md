@@ -2,6 +2,19 @@
 Heislab i emnet TTK4145 Sanntidsprogrammering
 liveshare: 
 
+
+Onsdag 6/3:
+Master slave logikk: 
+sjekk i main om man er master eller slave. f.eks. lag en funksjon som returnerer en bool som er true hvis master og false ellers. 
+FSM tar inn et ekstra bool parameter som er "master" som blir true eller false. 
+Når heisen er slave, skal den alltid sende ordre til master på button press, og vente på oppdatert cost function. 
+Når heisen er master, skal den kjøre cost function når den mottar nye ordre, enten fra seg selv eller ordre fra andre heiser. og deretter sende ut oppdatert cost function, også til seg selv. 
+
+Kanskje en if setning som sjekker if master, og hvis true så kjører den cost function, ellers, sender den ordren med en gang, resten blir vel ganske likt for alle heisene. Kanskje sende ordren til seg selv hvis master? Kan da få problemer dersom heisen ikke er kobblet til nettet. 
+Kanskje å la master kjøre cost function og sende oppdatert HRA til alle, men trenger ikke sende til seg selv i tillegg, siden man allerede har infoen. kanskje like greit å bare sende likevel, men ikke nødvendigvis bruke det?
+
+
+
 Må endre alt som er skrevet som pass by reference. Bør istedet la funksjonene våre kun gjøre utregninger, også endre på heisen vår i main hovedsakelig. 
 Kanskje kalle på hardware i fsm fortsatt? så lenge vi kun gjør det et sted så gjør det det enklere å debugge. 
 
