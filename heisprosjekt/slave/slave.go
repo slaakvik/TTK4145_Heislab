@@ -42,6 +42,7 @@ func ExtractIpFromSlaves(slavesId []string, slavesIp []string) []string {
 	for _, slave := range slavesId {
 		data := strings.Split(slave, "-")
 		slavesIp = append(slavesIp, data[1])
+		fmt.Printf("AAAAAAAA: %v\n", data[1])
 	}
 	return slavesIp
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	"time"
 )
 
 /**
@@ -54,6 +55,7 @@ func Transmit(port int, address string, data interface{}) {
 		fmt.Printf("[error] Failed to Dial: %v\n", err)
 		return
 	}
+	defer conn.Close()
 
 	buffer, err := json.Marshal(data)
 
@@ -74,6 +76,12 @@ func Transmit(port int, address string, data interface{}) {
 		fmt.Printf("[error] Failed to write: %v\n", err)
 		return
 	}
+	n, err := conn.Read(buffer)
+	if err != nil {
+		fmt.Printf("[error] Failed to read: %v\n", err)
+		return
+	}
+	fmt.Printf("Read: %v\n", string(buffer[0:n]))
 }
 
 /**
@@ -144,8 +152,18 @@ func Receive(port int, address string, data ...interface{}) {
 			Send: reflect.Indirect(value),
 		}})
 
-		//conn.Write([]byte("hei"))
+		conn.Write([]byte("ACK"))
 
 		conn.Close()
 	}
+}
+
+func CanConnectToMaster(address string, port int, timeout time.Duration) bool {
+	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", address, port), timeout*time.Second)
+	if err != nil {
+		fmt.Printf("[error] Error establishing tcp-connection %v\n", err)
+		return false
+	}
+	conn.Close()
+	return true
 }

@@ -35,15 +35,15 @@ func CheckId(id string) string {
  * M is short for "master" and S is short for "slave".
  */
 const (
-	M_CONN_PORT_R1 = 50000
-	M_CONN_PORT_R2 = 50001
-	M_CONN_PORT_T1 = 50002 
-	M_CONN_PORT_T2 = 50003 
+	M_CONN_PORT_R1 = 16500
+	M_CONN_PORT_R2 = 16501
+	M_CONN_PORT_T1 = 16502 
+	M_CONN_PORT_T2 = 16503 
 
-	S_CONN_PORT_R1 = 55000
-	S_CONN_PORT_T1 = 55001
-	S_CONN_PORT_R2 = 55002
-	S_CONN_PORT_T2 = 55003
+	S_CONN_PORT_R1 = 16600
+	S_CONN_PORT_T1 = 16601
+	S_CONN_PORT_R2 = 16602
+	S_CONN_PORT_T2 = 16603
 )
 
 
@@ -96,6 +96,9 @@ func main() {
 			peers.PrintUpdatedPeers(data)
 
 			PeersProcessId = peers.ExtractProcessIdFromPeers(data, PeersIp)
+
+			// linjene under burde være "if master not exist"
+
 			masterIdIndex, err := master.ChooseMasterIndex(PeersProcessId)
 			MasterId = master.ChooseMaster(masterIdIndex, data)
 			if err != nil {
@@ -107,20 +110,17 @@ func main() {
 
 			// Extracting the IP-adresses from the master and the slaves
 			SlavesIp = slave.ExtractIpFromSlaves(SlavesId, SlavesIp)
-			MasterIp = peers.ExtractIpFromPeer(MasterId)
-			
+			TempMasterIp := peers.ExtractIpFromPeer(MasterId)
 			MasterProcessId = peers.ExtractProcessIdFromPeer(MasterId)
-			//var katt = os.Getpid()
-			if master.CheckIfYouAreMaster(MasterProcessId, ProcessId) {
-				for _, slaveIp := range SlavesIp {
-					go tcp.Transmit(M_CONN_PORT_T1, slaveIp, elev)
-					go tcp.Receive(M_CONN_PORT_R1, slaveIp, elevatorRx)
-				}
+			
+			if master.CheckIfYouAreMaster(MasterProcessId, ProcessId) && !tcp.CanConnectToMaster(TempMasterIp, M_CONN_PORT_R1, 1){
+				MasterIp = TempMasterIp
+				fmt.Print("I am Master, u fucker\n")
+				go tcp.Receive(M_CONN_PORT_R1, "localhost", elevatorRx) 
 			} else {
-				fmt.Printf("Slave: %v\n", id)
-				go tcp.Receive(S_CONN_PORT_R1, MasterIp, elevatorRx)
-				go tcp.Transmit(S_CONN_PORT_T1, MasterIp, elev)
-			} 
+				fmt.Print("I am nothing, but your humble servant\n")
+				go tcp.Transmit(M_CONN_PORT_R1, MasterIp, elev)
+			}
 		case data := <-elevatorRx:
 			fmt.Printf("Heisen: %v\n", data)
 		}
