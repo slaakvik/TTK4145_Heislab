@@ -33,7 +33,8 @@ Imperative shell functional core.
     	legg til den nye requesten til i din request liste. Kjør cost function.
    	Send resultat fra cost function til alle. 
       	Likt uavhengig call: Send resultat fra costfunksjon til kanalen for newOrders slik at slavene ser det.  
-	send også resultatet til masterNewOrders slik at master kan lese det uten at det går via nettet. (kanskje det går fint hvis det også går via nettet(?))
+	send også resultatet til masterNewOrders slik at master kan lese det uten at det går via nettet. 
+ 	(kanskje det går fint hvis det også går via nettet(?))
 
 
 Ved newOrders: 
