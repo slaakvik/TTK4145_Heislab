@@ -19,17 +19,21 @@ Imperative shell functional core.
  
  
  	hvis slave:  
- 		Hvis hall call: lag en kopi av deg selv, legg til den nye requesten inn i request listen til kopien. Send kopien til master (da vil updatedElevs inntreffe).
+ 		Hvis hall call: lag en kopi av deg selv, legg til den nye requesten inn i request listen til kopien. 
+   		Send kopien til master (da vil updatedElevs inntreffe).
   		Hvis cab call: legg til den nye requesten til i din request liste. Send deg selv til master. 
  
  
 	 Hvis master: 
- 		Hvis hall call: lag en kopi av deg selv, legg til den nye requesten inn i request listen til kopien. Kjør cost function på og bruk kopien som deg selv. 
-  			Send resultat fra cost function til alle.
-  		Hvis cab call: legg til den nye requesten til i din request liste. Kjør cost function.
-   			Send resultat fra cost function til alle. 
-      		Likt uavhengig call: Send resultat fra costfunksjon til kanalen for newOrders slik at slavene ser det.  
-		send også resultatet til masterNewOrders slik at master kan lese det uten at det går via nettet. (kanskje det går fint hvis det også går via nettet(?))
+ 		Hvis hall call: 
+   	lag en kopi av deg selv, legg til den nye requesten inn i request listen til kopien.
+   	Kjør cost function og bruk kopien som deg selv. 
+  	Send resultat fra cost function til alle.
+  		Hvis cab call: 
+    	legg til den nye requesten til i din request liste. Kjør cost function.
+   	Send resultat fra cost function til alle. 
+      	Likt uavhengig call: Send resultat fra costfunksjon til kanalen for newOrders slik at slavene ser det.  
+	send også resultatet til masterNewOrders slik at master kan lese det uten at det går via nettet. (kanskje det går fint hvis det også går via nettet(?))
 
 
 Ved newOrders: 
@@ -38,7 +42,9 @@ NewOrders er en kanal hvor det blir sendt et map som inneholder resultat fra cos
  	Hvis slave: 
   	når kanalen oppdateres skal slaver lese fra kanalen og utføre ordren som hører til sin egen ID.
   	Hvis Master: 
-   	Master skal helst ikke lese fra nettet hvilke nye ordre den skal ta? kanskje den kan det? eventuelt ha et eget case for neworders (masterNewOrders) som master sender til, hvor den skal utføre ordrene, og slavene ikke skal gjøre noe. Isåfall skal ikke master gjøre noe når denne casen inntreffer. 
+   	Master skal helst ikke lese fra nettet hvilke nye ordre den skal ta? kanskje den kan det? eventuelt ha et eget case for 
+    neworders (masterNewOrders) som master sender til, hvor den skal utføre ordrene, og slavene ikke skal gjøre noe. 
+    Isåfall skal ikke master gjøre noe når denne casen inntreffer. 
    	
 
 
