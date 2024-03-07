@@ -41,7 +41,7 @@ Ved newOrders:
 NewOrders er en kanal hvor det blir sendt et map som inneholder resultat fra cost function.
 	
  	Hvis slave: 
-  	når kanalen oppdateres skal slaver lese fra kanalen og utføre ordren som hører til sin egen ID.
+  	når kanalen oppdateres skal slaver lese fra kanalen og utføre ordrene som hører til sin egen ID.
   	Hvis Master: 
    	Master skal helst ikke lese fra nettet hvilke nye ordre den skal ta? kanskje den kan det? eventuelt ha et eget case for 
     neworders (masterNewOrders) som master sender til, hvor den skal utføre ordrene, og slavene ikke skal gjøre noe. 
@@ -64,7 +64,7 @@ updatedElevs er en kanal hvor det blir sendt en Elevator struct hver gang noe me
 Ved masterNewOrder: 
 	
  	hvis slave: Ikke gjør noe.
- 	Hvis master: Utfør ordren din. finner den ved å finne hall requestene som hører til master sin egen id
+ 	Hvis master: Utfør ordrene dine. finner de ved å finne hall requestene som hører til master sin egen id
 
 
 
