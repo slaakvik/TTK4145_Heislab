@@ -57,7 +57,8 @@ updatedElevs er en kanal hvor det blir sendt en Elevator struct hver gang noe me
 		ikke gjør noe, gå ut av casen. 
 	Hvis master: 
 		finn ut hvilken id den oppdaterte heisen har, og oppdater heisen i arrayen/mapet med tilhørende id.
- 		Kjør så cost function på de nye heisene, og send cost function ut til newOrders kanalen. 
+ 		Kjør så cost function på de nye heisene, og send resultat fra cost function ut til newOrders kanalen. 
+   	(og eventuelt til masterNewOrders) 
 
 
   
