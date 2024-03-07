@@ -28,17 +28,17 @@ Imperative shell functional core.
   			Send resultat fra cost function til alle.
   		Hvis cab call: legg til den nye requesten til i din request liste. Kjør cost function.
    			Send resultat fra cost function til alle. 
-      		Likt uavhengig call: Send resultat fra costfunksjon til kanalen for newOrders. (ikke via nettet, kun kall på kanalen). 
-
+      		Likt uavhengig call: Send resultat fra costfunksjon til kanalen for newOrders slik at slavene ser det.  
+		send også resultatet til masterNewOrders slik at master kan lese det uten at det går via nettet. (kanskje det går fint hvis det også går via nettet(?))
 
 
 Ved newOrders: 
 NewOrders er en kanal hvor det blir sendt et map som inneholder resultat fra cost function.
 	
  	Hvis slave: 
-  	når kanalen oppdateres skal slaver lese fra kanalen og utføre ordren som hører til den sin egen ID.
+  	når kanalen oppdateres skal slaver lese fra kanalen og utføre ordren som hører til sin egen ID.
   	Hvis Master: 
-   	Master skal helst ikke lese fra nettet hvilke nye ordre den skal ta? kanskje den kan det? eventuelt ha et eget case for neworders (masterNewOrders) som master sender til, hvor den skal utføre ordrene, og slavene 	ikke skal gjøre noe. Isåfall skal ikke master gjøre noe når denne casen inntreffer. 
+   	Master skal helst ikke lese fra nettet hvilke nye ordre den skal ta? kanskje den kan det? eventuelt ha et eget case for neworders (masterNewOrders) som master sender til, hvor den skal utføre ordrene, og slavene ikke skal gjøre noe. Isåfall skal ikke master gjøre noe når denne casen inntreffer. 
    	
 
 
