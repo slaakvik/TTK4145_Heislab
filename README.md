@@ -4,6 +4,39 @@ liveshare:
 
 Imperative shell functional core.
 
+ [___Torsdag 7/3___]
+ Logikk: 
+ ulike caser i fsm: 
+ button press, newOrdders, updatedElevs + de andre som er der nå.
+ Ved button press: 
+ hvis slave: 
+ 	Hvis hall call: lag en kopi av deg selv, legg til den nye requesten inn i request listen til kopien. Send kopien til master (da vil updatedElevs inntreffe).
+  	Hvis cab call: legg til den nye requesten til i din request liste. Send deg selv til master. 
+ Hvis master: 
+ 	Hvis hall call: lag en kopi av deg selv, legg til den nye requesten inn i request listen til kopien. Kjør cost function på og bruk kopien som deg selv. 
+  			Send resultat fra cost function til alle.
+  	Hvis cab call: legg til den nye requesten til i din request liste. Kjør cost function.
+   			Send resultat fra cost function til alle. 
+      	Likt uavhengig call: Send resultat fra costfunksjon til kanalen for newOrders. (ikke via nettet, kun kall på kanalen). 
+
+Ved newOrders: 
+NewOrders er en kanal hvor det blir sendt et map som inneholder resultat fra cost function.
+	Like oppgaver uavhengig av om du er master eller slave. 
+ 	når kanalen oppdateres skal slaver lese fra kanalen og utføre ordren som hører til den sin egen ID.
+  	Master skal helst ikke lese fra nettet hvilke nye ordre den skal ta? kanskje den kan det? eventuelt ha et eget case for neworders som master sender til, hvor den skal utføre ordrene, og 	slavene ikke skal gjøre noe. 
+
+Ved updatedElevs:
+updatedElevs er en kanal hvor det blir sendt en Elevator struct hver gang noe med heisen oppdateres. alle slavene sender heisen sin til denne kanalen. 
+Hvis slave:
+	ikke gjør noe, gå ut av casen. 
+Hvis master: 
+	finn ut hvilken id den oppdaterte heisen har, og oppdater heisen i arrayen/mapet med tilhørende id.
+ 	Kjør så cost function på de nye heisene, og send cost function ut til newOrders kanalen. 
+		
+
+
+
+
 
 Onsdag 6/3:
 Master slave logikk: 
