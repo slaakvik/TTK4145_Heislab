@@ -12,7 +12,7 @@ Imperative shell functional core.
  ulike caser i fsm: 
  
  
- button press, newOrdders, updatedElevs + de andre som er der nå.
+ button press, newOrdders, updatedElevs, masterNewOrders + de andre som er der nå.
  
  
  Ved button press: 
@@ -35,9 +35,11 @@ Imperative shell functional core.
 Ved newOrders: 
 NewOrders er en kanal hvor det blir sendt et map som inneholder resultat fra cost function.
 	
- 	Like oppgaver uavhengig av om du er master eller slave. 
- 	når kanalen oppdateres skal slaver lese fra kanalen og utføre ordren som hører til den sin egen ID.
-  	Master skal helst ikke lese fra nettet hvilke nye ordre den skal ta? kanskje den kan det? eventuelt ha et eget case for neworders som master sender til, hvor den 	skal utføre ordrene, og slavene ikke skal gjøre noe. 
+ 	Hvis slave: 
+  	når kanalen oppdateres skal slaver lese fra kanalen og utføre ordren som hører til den sin egen ID.
+  	Hvis Master: 
+   	Master skal helst ikke lese fra nettet hvilke nye ordre den skal ta? kanskje den kan det? eventuelt ha et eget case for neworders (masterNewOrders) som master sender til, hvor den skal utføre ordrene, og slavene 	ikke skal gjøre noe. Isåfall skal ikke master gjøre noe når denne casen inntreffer. 
+   	
 
 
 
@@ -49,9 +51,13 @@ updatedElevs er en kanal hvor det blir sendt en Elevator struct hver gang noe me
 	Hvis master: 
 		finn ut hvilken id den oppdaterte heisen har, og oppdater heisen i arrayen/mapet med tilhørende id.
  		Kjør så cost function på de nye heisene, og send cost function ut til newOrders kanalen. 
-		
 
 
+  
+Ved masterNewOrder: 
+	
+ 	hvis slave: Ikke gjør noe.
+ 	Hvis master: Utfør ordren din. finner den ved å finne hall requestene som hører til master sin egen id
 
 
 
