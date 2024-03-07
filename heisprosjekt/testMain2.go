@@ -14,7 +14,7 @@ func main() {
 
 	tullekanalen := make(chan string)
 
-    flag.BoolVar(&isServer, "IsServer", false, "")
+    flag.BoolVar(&isServer, "isServer", false, "")
     flag.Parse()
 
     fmt.Printf("Is server: %v", isServer)
@@ -30,5 +30,5 @@ func main() {
 	} else {
 		tcp.Transmit(8080, "localhost", "tøys")
 	}
-
 }
+
