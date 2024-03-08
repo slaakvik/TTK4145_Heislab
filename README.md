@@ -184,6 +184,42 @@ func InputToCost(elevatorArray) HRAInput {
 	+ Skal MasterID være slik den er nå? Er det andre måter dette kan gjøres på? 
 
 
+________________________________________________________
+func orHallCalls som lager en commonHallCalls:
+
+```Go
+func orHallCalls(allElevs map[string]elevator.Elevator) [][2]bool {
+	result := make([][2]bool, elevio.NumFloors)
+	for _, elev := range allElevs {
+		for j, row := range elevator.GetHallCalls(elev) {
+			result[j][0] = result[j][0] || row[0]
+			result[j][1] = result[j][1] || row[1]
+		}
+	}
+	return result
+}
+```
 
 
+Hvordan man bruker orHallCalls. Den returnerer da en felles hallCall [elevio.numFloors][2] - liste
+```Go
+commonHallCalls := orHallCalls(allElevs)
+```
+
+Følgende funksjonalitet fjerner alle som ikke er peers fra mapet med alle elevators på nettverket
+Krever at man har tilgang til: peers.PeerUpdate, hvor jeg har kalt den structen for p
+```Go
+for key := range allElevs { // Deleting key-value pair from allElevs map if it is not a peer
+		found := false
+		for _, elem := range p {
+			if elem == key {
+				found = true
+				break
+			}
+		}
+		if !found {
+			delete(allElevs, key)
+		}
+	}
+```
 
