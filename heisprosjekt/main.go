@@ -3,6 +3,8 @@ package main
 import (
 	//"Heis/cost_fns"
 	"Heis/driver-go/elevio"
+	"Heis/elevator"
+
 	// "Heis/elevator"
 	"Heis/fsm"
 
@@ -50,15 +52,20 @@ func main() {
 	go peers.Transmitter(15623, eleviId, peerTxEnable)
 	go peers.Receiver(15623, peerUpdateCh)
 	//broadcast
-	ElevatorTx := make(chan netfuncs.HelloMsg)
-	ElevatorRx := make(chan netfuncs.HelloMsg)
+	ElevatorTx := make(chan elevator.Elevator)
+	ElevatorRx := make(chan elevator.Elevator)
 	go bcast.Transmitter(16523, ElevatorTx)
 	go bcast.Receiver(16523, ElevatorRx)
 
 	//go netfuncs.Bcast_message(ElevatorTx, elev, eleviId)
-
+	//send cost func result to network
+	CostTx := make(chan map[string][][2]bool)
+	CostRx := make(chan map[string][][2]bool)
+	go bcast.Transmitter(16524, CostTx)
+	go bcast.Receiver(16524, CostRx)
 	//Master slave
-	//isMaster := false
+	isMaster := true
+	masterOrders := make(chan map[string][][2]bool)
 
 	fmt.Printf("Started!\n")
 	//cost function test:
@@ -70,8 +77,8 @@ func main() {
 	// 	elev = fsm.OnInitBetweenFloors(elev)
 	// 	elevator.Elevator_print(elev)
 	// }
-	go fsm.FSM(drv_buttons, drv_floors, drv_stop, drv_obstr, eleviId)
-	go netfuncs.Network_FSM(peerUpdateCh, peerTxEnable)
+	go fsm.FSM(drv_buttons, drv_floors, drv_stop, drv_obstr, eleviId, isMaster, ElevatorTx, CostTx, masterOrders, ElevatorRx, CostRx)
+	go netfuncs.Network_FSM(peerUpdateCh)
 	select {}
 }
 
