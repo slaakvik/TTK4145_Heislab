@@ -1,16 +1,16 @@
 package netfuncs
 
 import (
-	"Heis/elevator"
+	//"Heis/elevator"
 	"Heis/network/localip"
 	"Heis/network/peers"
 	"flag"
 	"fmt"
 	"os"
-	"time"
+	//"time"
 )
 
-func Network_FSM(peerChan chan peers.PeerUpdate, peerTX chan bool) {
+func Network_FSM(peerChan chan peers.PeerUpdate) {
 	for {
 		select {
 		case a := <-peerChan:
@@ -22,11 +22,11 @@ func Network_FSM(peerChan chan peers.PeerUpdate, peerTX chan bool) {
 	}
 }
 
-type HelloMsg struct {
-	Message string
-	elev    elevator.Elevator
-	Iter    int
-}
+// type HelloMsg struct {
+// 	Message string
+// 	elev    elevator.Elevator
+// 	Iter    int
+// }
 
 func InitNet() string {
 	var id string
@@ -54,11 +54,11 @@ func printPeerUpdate(p peers.PeerUpdate) {
 	fmt.Printf("  Lost:     %q\n", p.Lost)
 }
 
-func Bcast_message(ch chan HelloMsg, elev elevator.Elevator, id string) {
-	message := HelloMsg{"Hello from " + id, elev, 0}
-	for {
-		message.Iter++
-		ch <- message
-		time.Sleep(1 * time.Second)
-	}
-}
+// func Bcast_message(ch chan HelloMsg, elev elevator.Elevator, id string) {
+// 	message := HelloMsg{"Hello from " + id, elev, 0}
+// 	for {
+// 		message.Iter++
+// 		ch <- message
+// 		time.Sleep(1 * time.Second)
+// 	}
+// }
