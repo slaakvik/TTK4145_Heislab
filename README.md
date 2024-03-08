@@ -4,6 +4,17 @@ liveshare:
 
 Imperative shell functional core.
 
+[___Fredag 8/3___]
+
+
+Vi bør initialisere heisen i main, som en kanal. 
+
+elev:= make(chan elevator.Elevator)
+
+Denne kanalen kan vi da sende til hele tiden fra andre goroutines, likt som button press blir registrert og meldinger blir sendt over nettet. 
+Blir da mye enklere å få ting til å se oversiktlig ut. 
+!Vamos!
+
  [___Torsdag 7/3___]
  
  
