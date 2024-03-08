@@ -13,7 +13,9 @@ elev:= make(chan elevator.Elevator)
 
 Denne kanalen kan vi da sende til hele tiden fra andre goroutines, likt som button press blir registrert og meldinger blir sendt over nettet. 
 Blir da mye enklere å få ting til å se oversiktlig ut. 
-!Vamos!
+
+
+Kan hende vi får problemer med at slavene leter etter sin id i mappet når det ikke er der, må kanskje sjekke først at id'en ligger i mappet før vi henter det ut. 
 
  [___Torsdag 7/3___]
  
