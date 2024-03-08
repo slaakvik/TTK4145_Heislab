@@ -18,6 +18,7 @@ type Elevator struct {
 	Dirn      elevio.MotorDirection
 	Requests  [elevio.NumFloors][elevio.NumButtons]bool
 	Behaviour ElevatorBehaviour
+	ElevID    string
 	//DoorOpenDuration_s float32
 	//DoorOpen           bool
 }

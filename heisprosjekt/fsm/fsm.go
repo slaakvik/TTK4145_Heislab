@@ -11,13 +11,21 @@ import (
 
 // Finite state machine
 
-func FSM(buttons chan elevio.ButtonEvent, floors chan int, stop chan bool, obstr chan bool, elevatorID string) {
+func FSM(buttons chan elevio.ButtonEvent, floors chan int, stop chan bool, obstr chan bool, elevatorID string, isMaster bool, sendElev chan elevator.Elevator, updatedCostTx chan map[string][][2]bool, masterNewOrder chan map[string][][2]bool, receiveElev chan elevator.Elevator, updatedCostRx chan map[string][][2]bool) {
 	elev := elevator.InitElev()
+	elev.ElevID = elevatorID
 
 	if elevio.GetFloor() == -1 {
 		elev = onInitBetweenFloors(elev)
 		elevator.Elevator_print(elev)
 	}
+
+	//dersom man er master skal man sette opp en cost func map og legge til seg selv:
+	mapOfElevs := make(map[string]elevator.Elevator)
+	fmt.Println(mapOfElevs)
+	fmt.Println("______________")
+	//mapOfElevs[elev.ElevID] = elev
+
 	//cost function test:
 	// elev.Floor = elevio.GetFloor()
 	// input := cost_fns.InputToCost(elev)
@@ -35,59 +43,133 @@ func FSM(buttons chan elevio.ButtonEvent, floors chan int, stop chan bool, obstr
 
 			if elev.Behaviour != elevator.EB_Moving && requests.Requests_shouldClearImmediately(elev, btn_floor, btn_type) {
 				elev.Behaviour = elevator.EB_DoorOpen
+				mapOfElevs[elev.ElevID] = elev
+				sendElevToMaster(isMaster, sendElev, elev)
+
 				setAllLights(elev)
 				quit := make(chan int)
 				go doorTimer(quit)
 				<-quit
 				elev = onDoorTimeout(elev)
+
 			} else {
-				//kall cost func med nye requests.
-				//switch case som sjekker om heisen er idle eller moving/dooropen.
-				// dersom heisen er moving eller dooropen skal request listen oppdateres utifra cost func
-				//dersom heisen er idle skal den i tillegg velge retnig og sette motordirection etter å ha hentet requests fra costfunc.
-				//finn en måte å hente ut riktig keys og values fra cost func, og flett inn de nye hall callsene inn i request listen til heisen.
+				if isMaster {
+					if btn_type == 2 {
+						fmt.Println("cab callll")
+						elev.Requests[btn_floor][btn_type] = true
+						mapOfElevs[elev.ElevID] = elev
+						fmt.Println(mapOfElevs)
 
-				//Tar inn id som parameter, og sjekker
-				if btn_type == 2 {
-					elev.Requests[btn_floor][btn_type] = true
+						// //Her må vi kjøre cost funcksjonen
+						// runcostresult := runCostFunc(mapOfElevs)
+						// //Sende resultat fra cost funksjon til alle.
+						// updatedCostTx <- runcostresult
+
+						// MyNewHRs := runcostresult[elev.ElevID]
+						// elev = onRequest(elev, MyNewHRs)
+						// mapOfElevs[elev.ElevID] = elev
+					} else {
+						temp_elev := elev
+						temp_elev.Requests[btn_floor][btn_type] = true
+						mapOfElevs[elev.ElevID] = temp_elev
+						// //Her må vi kjøre cost funcksjonen
+						// runcostresult := runCostFunc(mapOfElevs)
+						// //Sende resultat fra cost funksjon til alle.
+						// updatedCostTx <- runcostresult
+						// fmt.Println("Hall calllll")
+						// // masterNewOrder <- runcostresult
+						// MyNewHRs := runcostresult[elev.ElevID]
+						// elev = onRequest(elev, MyNewHRs)
+						// mapOfElevs[elev.ElevID] = elev
+					}
+					//Her må vi kjøre cost funcksjonen
+					runcostresult := runCostFunc(mapOfElevs)
+					//Sende resultat fra cost funksjon til alle.
+					updatedCostTx <- runcostresult
+					//fmt.Println(mapOfElevs)
+					fmt.Println("Map of elevators:")
+					fmt.Println(mapOfElevs)
+					fmt.Println("Output from cost function")
+					fmt.Println(runcostresult)
+					fmt.Println()
+
+					MyNewHRs := runcostresult[elev.ElevID]
+					elev = onRequest(elev, MyNewHRs)
+					mapOfElevs[elev.ElevID] = elev
+
+				} else {
+
+					if btn_type == 2 {
+						elev.Requests[btn_floor][btn_type] = true
+						sendElev <- elev
+					} else {
+						temp_elev := elev
+						temp_elev.Requests[btn_floor][btn_type] = true
+						sendElev <- temp_elev
+					}
 				}
-
-				NewHRs := runCostFunc(elev, btn_floor, int(btn_type), elevatorID)
-				MyNewHRs := NewHRs[elevatorID]
-				switch elev.Behaviour {
-				case elevator.EB_DoorOpen:
-					elev.Requests = elevator.MergeHallAndRequests(elev.Requests, MyNewHRs)
-
-				case elevator.EB_Moving:
-					elev.Requests = elevator.MergeHallAndRequests(elev.Requests, MyNewHRs)
-
-				case elevator.EB_Idle:
-					elev.Requests = elevator.MergeHallAndRequests(elev.Requests, MyNewHRs)
-					pair := requests.Requests_chooseDirection(elev)
-					elev.Dirn = pair.Dirn
-					elevio.SetMotorDirection(elev.Dirn)
-					elev.Behaviour = pair.Behaviour
-				}
-
 			}
-			setAllLights(elev)
+
+		case a := <-receiveElev:
+			//fmt.Printf("ElevatorRx: %+v\n", a)
+			if isMaster {
+				mapOfElevs[a.ElevID] = a
+				//Her må vi kjøre cost funcksjonen
+				runcostresult := runCostFunc(mapOfElevs)
+				fmt.Println()
+				fmt.Println(runcostresult)
+				fmt.Println()
+
+				//Sende resultat fra cost funksjon til alle.
+				updatedCostTx <- runcostresult
+				//masterNewOrder <- runcostresult
+				MyNewHRs := runcostresult[elev.ElevID]
+				elev = onRequest(elev, MyNewHRs)
+				mapOfElevs[elev.ElevID] = elev
+			}
+		// case a := <-masterNewOrder:
+		// 	if isMaster {
+		// 		fmt.Printf("Master got a new order: %+v\n", a)
+		// 		MyNewHRs := a[elev.ElevID]
+		// 		elev = onRequest(elev, MyNewHRs)
+		// 		mapOfElevs[elev.ElevID] = elev
+
+		// 	}
+		case a := <-updatedCostRx:
+			if !isMaster {
+				//fmt.Printf("CostRx: %+v\n", a)
+				MyNewHRs := a[elev.ElevID]
+				elev = onRequest(elev, MyNewHRs)
+				mapOfElevs[elev.ElevID] = elev
+				//fmt.Println(mapOfElevs)
+				sendElevToMaster(isMaster, sendElev, elev)
+			}
 
 		case a := <-floors: // a er etasjen heisen er i
 			fmt.Printf("Floor: %+v\n", a)
 			//onFloorArrival(&elev, a)
+			//if elev.Floor != a {
+
 			elev.Floor = a
 			elevio.SetFloorIndicator(elev.Floor)
+			mapOfElevs[elev.ElevID] = elev
+			sendElevToMaster(isMaster, sendElev, elev)
+			//	}
 			switch elev.Behaviour {
 			case elevator.EB_Moving:
 				if requests.Requests_shouldStop(elev) {
 					elevio.SetMotorDirection(elevio.MD_Stop)
 					elev.Behaviour = elevator.EB_DoorOpen
+					mapOfElevs[elev.ElevID] = elev
+					sendElevToMaster(isMaster, sendElev, elev)
 					setAllLights(elev)
 					quit := make(chan int)
 					go doorTimer(quit)
 					<-quit
 					elev = onDoorTimeout(elev)
 				}
+				mapOfElevs[elev.ElevID] = elev
+				sendElevToMaster(isMaster, sendElev, elev)
 			default:
 			}
 		case a := <-stop:
@@ -106,6 +188,12 @@ func FSM(buttons chan elevio.ButtonEvent, floors chan int, stop chan bool, obstr
 func doorTimer( /*elev *elevator.Elevator,*/ quit chan int) { // Door opens for three seconds
 	time.Sleep(3 * time.Second)
 	quit <- 1
+}
+
+func sendElevToMaster(isMaster bool, updateElev chan elevator.Elevator, elev elevator.Elevator) {
+	if !isMaster {
+		updateElev <- elev
+	}
 }
 
 func obstruction_functionality(obstruct bool, elev elevator.Elevator) {
@@ -147,10 +235,8 @@ func setAllLights(elev elevator.Elevator) {
 
 }
 
-func runCostFunc(elev elevator.Elevator, btn_floor int, btn_type int, elevId string) map[string][][2]bool {
-	tempElev := elev //egt unødvendig å ha tempElev, heisen vår endres kun i denne funksjonen hvis vi endrer den her, så vi likke påvirke heisen andre steder.
-	tempElev.Requests[btn_floor][btn_type] = true
-	input := cost_fns.InputToCost(tempElev, elevId)
+func runCostFunc(elevMap map[string]elevator.Elevator) map[string][][2]bool {
+	input := cost_fns.InputToCost(elevMap)
 	return cost_fns.GetCostOutput(input)
 }
 
@@ -174,6 +260,26 @@ func onDoorTimeout(elev elevator.Elevator) elevator.Elevator {
 
 	//fmt.Println("\nNew state:")
 	//elevator.Elevator_print(*elev)
+	return elev
+}
+
+func onRequest(elev elevator.Elevator, HallRequests [][2]bool) elevator.Elevator {
+	switch elev.Behaviour {
+	case elevator.EB_DoorOpen:
+		elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
+		fmt.Println("HeiHei")
+	case elevator.EB_Moving:
+		elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
+
+	case elevator.EB_Idle:
+		elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
+		pair := requests.Requests_chooseDirection(elev)
+		elev.Dirn = pair.Dirn
+		elevio.SetMotorDirection(elev.Dirn)
+		elev.Behaviour = pair.Behaviour
+	}
+
+	setAllLights(elev)
 	return elev
 }
 

@@ -1,6 +1,7 @@
 package cost_fns
 
 import (
+	"Heis/driver-go/elevio"
 	"Heis/elevator"
 	"encoding/json"
 	"fmt"
@@ -52,15 +53,40 @@ func elevToHRAElevState(elev elevator.Elevator) HRAElevState {
 	}
 }
 
-func InputToCost(elev elevator.Elevator, elevatorId string) HRAInput {
+func orHallCalls(allElevs map[string]elevator.Elevator) [][2]bool {
+	result := make([][2]bool, elevio.NumFloors)
+	for _, elev := range allElevs {
+		for j, row := range elevator.GetHallCalls(elev) {
+			result[j][0] = result[j][0] || row[0]
+			result[j][1] = result[j][1] || row[1]
+		}
+	}
+	return result
+}
+func InputToCost(elevMap map[string](elevator.Elevator)) HRAInput {
+	commonHallCalls := orHallCalls(elevMap)
+
+	stateMap := map[string]HRAElevState{}
+	for k, v := range elevMap {
+		stateMap[k] = elevToHRAElevState(v)
+	}
+
 	input := HRAInput{
-		HallRequests: elevator.GetHallCalls(elev),
-		States: map[string]HRAElevState{
-			elevatorId: elevToHRAElevState(elev),
-		},
+		HallRequests: commonHallCalls,
+		States:       stateMap,
 	}
 	return input
 }
+
+// func InputToCost(elev elevator.Elevator, elevatorId string) HRAInput {
+// 	input := HRAInput{
+// 		HallRequests: elevator.GetHallCalls(elev),
+// 		States: map[string]HRAElevState{
+// 			elevatorId: elevToHRAElevState(elev),
+// 		},
+// 	}
+// 	return input
+// }
 
 func HRA_funcs(input HRAInput, output *map[string][][2]bool, hraExecutable string) {
 
@@ -90,10 +116,6 @@ func GetCostOutput(input HRAInput) map[string][][2]bool {
 
 	HRA_funcs(input, output, hraExecutable)
 
-	fmt.Printf("output: \n")
-	for k, v := range *output {
-		fmt.Printf("%6v :  %+v\n", k, v)
-	}
 	return *output
 }
 
