@@ -25,6 +25,7 @@ import (
 } */
 
 func main() {
+	//kalosj9
 
 	//-----
 	_numFloors := elevio.NumFloors
@@ -40,7 +41,8 @@ func main() {
 	drv_floors := make(chan int)
 	drv_obstr := make(chan bool)
 	drv_stop := make(chan bool)
-	elevatorRx := make(chan elevator.Elevator) //TCP-receive
+	elevatorRx := make(chan elevator.Elevator) // TCP-receive
+	elevatorTx := make(chan elevator.Elevator) // TCP-transmit
 	//heartbeat := make(chan )
 
 	//Threads
@@ -76,25 +78,25 @@ func main() {
 			}
 		}
 	} else {
-		tcp.Transmit(8080, localip, elev)
+
+		tcp.Transmit2pkt0(8080, localip, elevatorTx)
+		elevatorTx<-elev
 	}
 
-	select {
+
+/* 	select {
 	case a := <-drv_buttons:
 		fmt.Printf("\ndrv_buttons%v\n", a)
-		tcp.Transmit(8080, localip, elev)
 
 	case a := <-drv_floors:
 		fmt.Printf("\ndrv_floors%v\n", a)
-		tcp.Transmit(8080, localip, elev)
 
 	case a := <-drv_stop:
 		fmt.Printf("\ndrv_stop%v\n", a)
-		tcp.Transmit(8080, localip, elev)
 
 	case a := <-drv_obstr:
-		fmt.Printf("\ndrv_obs %v\n", a)
-		tcp.Transmit(8080, localip, elev)
+		fmt.Printf("\ndrv_obs %v\n", a) */
+		
 	
 	
 	//felles for alle casene over: lage kopi av elev og send det til transmitter
@@ -104,8 +106,8 @@ func main() {
 		//
 		//
 
-	}
 }
+
 
 /*
 

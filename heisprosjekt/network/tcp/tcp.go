@@ -1,12 +1,14 @@
 package tcp
 
 import (
+	"Heis/elevator"
+	"Heis/network/localip"
 	"encoding/json"
 	"fmt"
 	"net"
 	"reflect"
 	"time"
-	"Heis/network/localip"
+	"sync"
 )
 
 /**
@@ -166,11 +168,42 @@ func CanConnectToMaster(address string, port int, timeout time.Duration) bool {
 	return true
 }
 
-
-
-
-
 // ----------------- [Litt endring] ---------------
+func Transmit2pkt0(port int, address string, dataCh <-chan elevator.Elevator) {
+	conn, err := net.Dial(CONN_TYPE, fmt.Sprintf("%s:%d", address, port))
+	if err != nil {
+		fmt.Printf("[error] Failed to Dial: %v\n", err)
+		return
+	}
+	defer conn.Close()
+
+	for data := range dataCh {
+		buffer, err := json.Marshal(data)
+		if err != nil {
+			fmt.Printf("[error] Failed to encode data with error: %v\n", err)
+			continue
+		}
+
+		buffer, err = json.Marshal(TaggedJson{reflect.TypeOf(data).Name(), buffer})
+		if err != nil {
+			fmt.Printf("[error] Failed to make buffer with error: %v\n", err)
+			continue
+		}
+
+		_, err = conn.Write(buffer)
+		if err != nil {
+			fmt.Printf("[error] Failed to write: %v\n", err)
+			continue
+		}
+
+		n, err := conn.Read(buffer)
+		if err != nil {
+			fmt.Printf("[error] Failed to read: %v\n", err)
+			continue
+		}
+		fmt.Printf("Read: %v\n", string(buffer[0:n]))
+	}
+}
 
 func Receive2pkt0(port int, data ...interface{}) {
 	localIp, err := localip.LocalIP()
@@ -249,4 +282,92 @@ func Receive2pkt0(port int, data ...interface{}) {
 
 		conn.Close()
 	}
+}
+
+// To varianter av Receive og Transmit som bare returnerer en connection
+
+
+var connectionsMutex sync.Mutex
+
+
+func ReceiveConn(port string, connections map[string]net.Conn, connectionsCh chan<- map[string]net.Conn) (net.Conn, error) {
+	// Resolve address
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:"+port)
+	if err != nil {
+		fmt.Println("Error resolving address:", err)
+		return nil, err
+	}
+	// Create listener
+	listener, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		fmt.Println("Error creating listener:", err)
+		return nil, err
+	}
+	defer listener.Close()
+
+	fmt.Println("Server listening on", addr.String())
+
+	// Accept incoming connections
+	buffer := make([]byte, 1024)
+	for {
+		tcpConn, err := listener.Accept()
+		if err != nil {
+			fmt.Println("Error accepting connection:", err)
+			continue
+		}
+		fmt.Println("Accepted connection on port: " + port)
+		fmt.Println("Her er jeg!")
+
+		// [Her leser jeg slavens ID]
+		k, err := tcpConn.Read(buffer)
+		if err != nil {
+			fmt.Printf("[error] Failed to read: %v\n", err)
+			return nil, err
+		}
+		id := string(buffer[0:k])
+		// ----
+		n, err := tcpConn.Read(buffer)
+		if err != nil {
+			fmt.Printf("[error] Failed to read: %v\n", err)
+			return nil, err
+		}
+		fmt.Printf("Read: %v\n", string(buffer[0:n]))
+		//go HandleConn(tcpConn, connections, connectionsCh)
+		 
+		// Update connections map
+		//remoteAddr := tcpConn.RemoteAddr().String() // foreløpig er bare keyen Ip-adressen til remote connection. Burde være peer
+		if connections == nil {
+			connections = make(map[string]net.Conn)
+		}
+		connectionsMutex.Lock()
+		connections[id] = tcpConn
+		connectionsMutex.Unlock()
+ 
+		// Send the updated connections map over the channel
+		connectionsCh <- connections
+	}
+}
+
+func HandleConn(conn net.Conn, connections map[string]net.Conn, connectionsCh chan<- map[string]net.Conn) map[string]net.Conn {
+	remoteAddr := conn.RemoteAddr().String() // foreløpig er bare keyen Ip-adressen til remote connection. Burde være peer
+	if connections == nil {
+		connections = make(map[string]net.Conn)
+	}
+	connections[remoteAddr] = conn
+	connectionsCh <- connections
+	return connections
+}
+
+func TransmitConn(port string, id string) (net.Conn, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:"+port) // dette er bare foreløpig. IP-som mates inn må være destinasjonen
+	if err != nil {
+		fmt.Println("Error resolving address:", err)
+		return nil, err
+	}
+	tcpConn, err := net.Dial(CONN_TYPE, addr.String())
+	if err != nil {
+		fmt.Printf("[error] Failed to Dial: %v\n", err)
+		return nil, err
+	}
+	return tcpConn, err
 }
