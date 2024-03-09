@@ -9,9 +9,7 @@ Heislab i emnet TTK4145 Sanntidsprogrammering
       + målet med ReceiveConn: dette 
 
 
-
-
-
+```Go
 p.Master = ""
 if id != "" {
     if _, idExists := lastSeen[id]; !idExists {
