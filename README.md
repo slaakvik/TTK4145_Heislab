@@ -8,7 +8,7 @@ Imperative shell functional core.
 [___Lørdag 9/3___]
 - Master-slave:
 	+ Angående tap av cab calles ved restart: alle heisene kan initialiseres med fire cab calls, for å forsikre om at alle ordre blir tatt hånd om :-D.
-	 Må lagge til en state i elevator structen som er "failure". Dersom heisen er obstructed så skal failure være true. master skal sjekke om heisen er i failure state før den sendes inn i cost function. Kun heiser som ikke er i failure state skal få nye hall requests. Altså skal master kun sende heisene som ikke er i failure inn i cost function. 
+	+Må lagge til en state i elevator structen som er "failure". Dersom heisen er obstructed så skal failure være true. master skal sjekke om heisen er i failure state før den sendes inn i cost function. Kun heiser som ikke er i failure state skal få nye hall requests. Altså skal master kun sende heisene som ikke er i failure inn i cost function. 
 
 
 
