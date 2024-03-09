@@ -288,9 +288,10 @@ func Receive2pkt0(port int, data ...interface{}) {
 
 // var connectionsMutex sync.Mutex
 
-func ReceiveConn(port string, connectionsCh chan<- map[string]net.Conn) (net.Conn, error) {
+func ReceiveConn(id string, port string, connectionsCh chan<- map[string]net.Conn) (net.Conn, error) {
+	masterIp := peers.ExtractIpFromPeer(id)
 	// Resolve address
-	addr, err := net.ResolveTCPAddr("tcp", "localhost:"+port)
+	addr, err := net.ResolveTCPAddr("tcp", masterIp+":"+port)
 	if err != nil {
 		fmt.Println("Error resolving address:", err)
 		return nil, err
@@ -350,8 +351,8 @@ func ReceiveConn(port string, connectionsCh chan<- map[string]net.Conn) (net.Con
 // 	//return connections
 // }
 
-func TransmitConn(port string, id string) (net.Conn, error) {
-	addr, err := net.ResolveTCPAddr("tcp", "localhost:"+port) // dette er bare foreløpig. IP-som mates inn må være destinasjonen
+func TransmitConn(port string, id string, masterIp string) (net.Conn, error) {
+	addr, err := net.ResolveTCPAddr("tcp", masterIp+":"+port) // dette er bare foreløpig. IP-som mates inn må være destinasjonen
 	if err != nil {
 		fmt.Println("Error resolving address:", err)
 		return nil, err
@@ -403,6 +404,38 @@ func SendAndReceive(connsCh chan map[string]net.Conn) {
 			//fmt.Println("Send and receive sin conn liste", c)
 			fmt.Println("Send and receive sin conn liste", conns)
 			fmt.Println()
+		}
+	}
+}
+
+func SlavePeerUpdateRx(peerUpdateRx chan peers.PeerUpdate, slaveTxCh chan string) {
+	master := ""
+	for {
+		select {
+		case p := <-peerUpdateRx:
+			peers.PrintUpdatedPeers(p)
+			fmt.Println()
+			if p.Master != master {
+				master = p.Master
+				slaveTxCh <- p.Master
+			}
+		}
+	}
+}
+
+func NotifyMaster(port string, id string, slaveTxCh chan string) {
+	for {
+		select {
+		case m := <-slaveTxCh:
+			masterIp := peers.ExtractIpFromPeer(m)
+			fmt.Println("Master IP:", masterIp)
+			tcpConn, err := TransmitConn(port, id, masterIp)
+			fmt.Printf("Her1\n")
+			if err != nil {
+				fmt.Printf("[error] Failed to Dial: %v\n", err)
+				return
+			}
+			fmt.Printf("Dette er connen: %v\n", tcpConn)
 		}
 	}
 }

@@ -34,6 +34,8 @@ func main() {
 
 	connectionsCh := make(chan map[string]net.Conn)
 
+	slaveTxCh := make(chan string)
+
 	peerEnableTx := make(chan bool)
 	peerUpdateRx := make(chan peers.PeerUpdate)
 
@@ -50,25 +52,22 @@ func main() {
 	fmt.Printf("Dette er min ID: %v\n", id)
 
 	if isMaster {
-		go tcp.ReceiveConn(masterPort, connectionsUpdateCh)
+		go tcp.ReceiveConn(id, masterPort, connectionsUpdateCh)
 		go tcp.AddConnections(id, connectionsUpdateCh, peerUpdateRx, connectionsCh)
 		go tcp.SendAndReceive(connectionsCh)
 
 	} else {
-		tcpConn, err := tcp.TransmitConn(masterPort, id)
-		fmt.Printf("Her1\n")
-		if err != nil {
-			fmt.Printf("[error] Failed to Dial: %v\n", err)
-			return
-		}
-		fmt.Printf("Dette er connen: %v\n", tcpConn)
-		for {
-			select {
-			case p := <-peerUpdateRx:
-				peers.PrintUpdatedPeers(p)
-				fmt.Println()
-			}
-		}
+		//go tcp.ReceiveConn(slavePort, connectionsUpdateCh)
+		go tcp.SlavePeerUpdateRx(peerUpdateRx, slaveTxCh)
+		go tcp.NotifyMaster(masterPort, id, slaveTxCh)
+		// tcpConn, err := tcp.TransmitConn(masterPort, id)
+		// fmt.Printf("Her1\n")
+		// if err != nil {
+		// 	fmt.Printf("[error] Failed to Dial: %v\n", err)
+		// 	return
+		// }
+		// fmt.Printf("Dette er connen: %v\n", tcpConn)
+
 		//tcpConn.Write([]byte("ACK - Dette skriver jeg til Master\n"))
 
 		// for {
