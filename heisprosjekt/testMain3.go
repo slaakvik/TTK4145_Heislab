@@ -73,7 +73,6 @@ func main() {
 	for{
 		fmt.Printf("Nå er jeg i en uendelig loop\n")
 		time.Sleep(3*time.Second)
-
 	}
 }
 
