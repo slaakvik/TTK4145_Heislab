@@ -10,9 +10,9 @@ import (
 )
 
 type PeerUpdate struct {
-	Peers []string
-	New   string
-	Lost  []string
+	Peers  []string
+	New    string
+	Lost   []string
 	Master string
 }
 
@@ -95,9 +95,19 @@ func Receiver(port int, peerUpdateCh chan<- PeerUpdate) {
 
 			sort.Strings(p.Peers)
 			sort.Strings(p.Lost)
+			p.Master = determineMaster(p.Peers)
 			peerUpdateCh <- p
 		}
 	}
+}
+
+func determineMaster(peers []string) string {
+	// Your logic to determine the master goes here
+	// For simplicity, you can use the first peer as the master
+	for len(peers) > 0 {
+		return peers[0]
+	}
+	return "" // Return an empty string if there are no peers
 }
 
 // ---[what i have defined]---
@@ -109,7 +119,6 @@ func PrintUpdatedPeers(p PeerUpdate) {
 	fmt.Printf("  Master:     %q\n", p.Master)
 }
 
-
 func ExtractIpFromPeers(p PeerUpdate, peersIp []string) []string {
 	//peersIp = ""
 	for _, peer := range p.Peers {
@@ -119,11 +128,10 @@ func ExtractIpFromPeers(p PeerUpdate, peersIp []string) []string {
 	return peersIp
 }
 
-func ExtractIpFromPeer(peer string) string{
+func ExtractIpFromPeer(peer string) string {
 	data := strings.Split(peer, "-")
 	return data[1]
 }
-
 
 func ExtractProcessIdFromPeers(p PeerUpdate, peersProcessId []string) []string {
 	//peersProcessId = nil // maybe not the best solution, but I need to reset the slice every time to not just add new peer. Alternetively, we could just remove the lost peers.

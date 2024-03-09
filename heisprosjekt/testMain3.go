@@ -66,6 +66,7 @@ func main() {
 			select {
 			case p := <-peerUpdateRx:
 				peers.PrintUpdatedPeers(p)
+				fmt.Println()
 			}
 		}
 		//tcpConn.Write([]byte("ACK - Dette skriver jeg til Master\n"))

@@ -325,8 +325,8 @@ func ReceiveConn(port string, connectionsCh chan<- map[string]net.Conn) (net.Con
 		}
 		id := string(buffer[0:k])
 		// --------------------------------
-		fmt.Printf("Read: %v\n", id)
-		fmt.Printf("Sjå på her da da: %v\n", connections)
+		//fmt.Printf("Read: %v\n", id)
+		//fmt.Printf("Sjå på her da da: %v\n", connections)
 
 		// Update connections map
 		//HandleConn(tcpConn, id, &connections, connectionsCh)
@@ -372,14 +372,14 @@ func AddConnections(id string, connsUpdateCh chan map[string]net.Conn, peerchan 
 		case c := <-connsUpdateCh:
 			conns = c
 			//fmt.Println("Updated connections:", c)
-			fmt.Println("Connections lagt til:", conns)
+			//fmt.Println("Connections lagt til:", conns)
 			connsCh <- conns
 		case c := <-peerchan:
 			if c.Master == "" {
 				c.Master = id
 			}
 			peers.PrintUpdatedPeers(c)
-			fmt.Println("Peer update:", c)
+			//fmt.Println("Peer update:", c)
 			for i := 0; i < len(c.Lost); i++ {
 				for k := range conns {
 					if k == c.Lost[i] {
@@ -387,7 +387,7 @@ func AddConnections(id string, connsUpdateCh chan map[string]net.Conn, peerchan 
 					}
 				}
 			}
-			fmt.Printf("Connections update fra peer: %v\n", conns)
+			//fmt.Printf("Connections update fra peer: %v\n", conns)
 			connsCh <- conns
 
 		}
@@ -402,6 +402,7 @@ func SendAndReceive(connsCh chan map[string]net.Conn) {
 			conns = c
 			//fmt.Println("Send and receive sin conn liste", c)
 			fmt.Println("Send and receive sin conn liste", conns)
+			fmt.Println()
 		}
 	}
 }
