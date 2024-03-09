@@ -1,8 +1,18 @@
-# TTK4145-Heislab_GuttaHeiser
+# TTK4145-Heislab
 Heislab i emnet TTK4145 Sanntidsprogrammering
 liveshare: 
 
 Imperative shell functional core.
+
+
+[___Lørdag 9/3___]
+- Master-slave:
+	+ Angående tap av cab calles ved restart: alle heisene kan initialiseres med fire cab calls, for å forsikre om at alle ordre blir tatt hånd om :-D.
+
+
+
+
+
 
 [___Fredag 8/3___]
 
