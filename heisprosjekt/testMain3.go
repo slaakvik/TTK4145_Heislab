@@ -27,6 +27,7 @@ func CheckId() string {
 }
 
 func main() {
+	//kalosj! 500
 
 	id := CheckId() //set the id to default if id is not provided at launch
 
@@ -34,7 +35,7 @@ func main() {
 
 	connectionsCh := make(chan map[string]net.Conn)
 
-	slaveTxCh := make(chan string)
+	masterUpdateCh := make(chan string)
 
 	peerEnableTx := make(chan bool)
 	peerUpdateRx := make(chan peers.PeerUpdate)
@@ -58,8 +59,8 @@ func main() {
 
 	} else {
 		//go tcp.ReceiveConn(slavePort, connectionsUpdateCh)
-		go tcp.SlavePeerUpdateRx(peerUpdateRx, slaveTxCh)
-		go tcp.NotifyMaster(masterPort, id, slaveTxCh)
+		go tcp.GetIdOfNewMaster(peerUpdateRx, masterUpdateCh)
+		go tcp.NotifyMaster(masterPort, id, masterUpdateCh)
 		// tcpConn, err := tcp.TransmitConn(masterPort, id)
 		// fmt.Printf("Her1\n")
 		// if err != nil {

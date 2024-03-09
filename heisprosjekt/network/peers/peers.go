@@ -74,7 +74,7 @@ func Receiver(port int, peerUpdateCh chan<- PeerUpdate) {
 		}
 
 		// Adding new Master
-		p.Master = ""
+		//p.Master = ""
 		if id != "" {
 			if _, idExists := lastSeen[id]; !idExists {
 				p.Master = id
@@ -95,18 +95,23 @@ func Receiver(port int, peerUpdateCh chan<- PeerUpdate) {
 
 			sort.Strings(p.Peers)
 			sort.Strings(p.Lost)
-			p.Master = determineMaster(p.Peers)
+			p.Master = determineMaster(p.Peers, p.Master)
 			peerUpdateCh <- p
 		}
 	}
 }
 
-func determineMaster(peers []string) string {
+func determineMaster(peers []string, masterId string) string {
 	// Your logic to determine the master goes here
 	// For simplicity, you can use the first peer as the master
+	// if masterId != "" {
+	// 	fmt.Println("Master is already set")
+	// 	return masterId
+	// }else if len(peers) > 0 {
 	for len(peers) > 0 {
 		return peers[0]
 	}
+	// }
 	return "" // Return an empty string if there are no peers
 }
 

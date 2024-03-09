@@ -2,7 +2,6 @@ package tcp
 
 import (
 	"Heis/elevator"
-	"Heis/network/localip"
 	"Heis/network/peers"
 	"encoding/json"
 	"fmt"
@@ -169,50 +168,42 @@ func CanConnectToMaster(address string, port int, timeout time.Duration) bool {
 }
 
 // ----------------- [Litt endring] ---------------
-func Transmit2pkt0(port int, address string, dataCh <-chan elevator.Elevator) {
-	conn, err := net.Dial(CONN_TYPE, fmt.Sprintf("%s:%d", address, port))
-	if err != nil {
-		fmt.Printf("[error] Failed to Dial: %v\n", err)
-		return
+func Transmit2pkt0(conn net.Conn, dataCh <-chan elevator.Elevator) {
+
+	for {
+		select {
+		case data := <-dataCh:
+			buffer, err := json.Marshal(data)
+			if err != nil {
+				fmt.Printf("[error] Failed to encode data with error: %v\n", err)
+				continue
+			}
+
+			buffer, err = json.Marshal(TaggedJson{reflect.TypeOf(data).Name(), buffer})
+			if err != nil {
+				fmt.Printf("[error] Failed to make buffer with error: %v\n", err)
+				continue
+			}
+
+			_, err = conn.Write(buffer)
+			if err != nil {
+				fmt.Printf("[error] Failed to write: %v\n", err)
+				continue
+			}
+
+			n, err := conn.Read(buffer)
+			if err != nil {
+				fmt.Printf("[error] Failed to read: %v\n", err)
+				continue
+			}
+			fmt.Printf("Read: %v\n", string(buffer[0:n]))
+		}
+
 	}
-	defer conn.Close()
 
-	for data := range dataCh {
-		buffer, err := json.Marshal(data)
-		if err != nil {
-			fmt.Printf("[error] Failed to encode data with error: %v\n", err)
-			continue
-		}
-
-		buffer, err = json.Marshal(TaggedJson{reflect.TypeOf(data).Name(), buffer})
-		if err != nil {
-			fmt.Printf("[error] Failed to make buffer with error: %v\n", err)
-			continue
-		}
-
-		_, err = conn.Write(buffer)
-		if err != nil {
-			fmt.Printf("[error] Failed to write: %v\n", err)
-			continue
-		}
-
-		n, err := conn.Read(buffer)
-		if err != nil {
-			fmt.Printf("[error] Failed to read: %v\n", err)
-			continue
-		}
-		fmt.Printf("Read: %v\n", string(buffer[0:n]))
-	}
 }
 
-func Receive2pkt0(port int, data ...interface{}) {
-	localIp, err := localip.LocalIP()
-	if err != nil {
-		fmt.Printf("[error] Failed to find local IP: %v\n", err)
-		return
-	}
-
-	listener, err := net.Listen(CONN_TYPE, fmt.Sprintf("%s:%d", localIp, port))
+func Receive2pkt0(conn net.Conn, data ...interface{}) {
 
 	channels := make(map[string]interface{}) // a map with called channels with each data's type, written as a string, as keys
 
@@ -224,22 +215,73 @@ func Receive2pkt0(port int, data ...interface{}) {
 		channels[reflect.TypeOf(channel).Elem().Name()] = channel
 	}
 
-	if err != nil {
-		fmt.Printf("[error] Failed to create listener with error: %v\n", err)
-		return
+	var tj TaggedJson
+	buffer := make([]byte, 1024)
+	for {
+
+		select {}
+
+		length, err := conn.Read(buffer)
+
+		if err != nil {
+			fmt.Printf("[error] Failed to read from connection with error: %v\n", err)
+			continue
+		}
+
+		err = json.Unmarshal(buffer[0:length], &tj)
+
+		if err != nil {
+			fmt.Printf("[error] Failed to marshal JSON with error: %v", err)
+			continue
+		}
+
+		channel, ok := channels[tj.Type]
+
+		if !ok {
+			fmt.Printf("[warning] Recieved type we are not listening to: %v\n", tj.Type)
+			continue
+		}
+
+		value := reflect.New(reflect.TypeOf(channel).Elem())
+
+		err = json.Unmarshal(tj.JSON, value.Interface()) // lagrer dataen vi har fått fra transmitter. Vi lagrer dette i value
+
+		if err != nil {
+			fmt.Printf("[error] Failed to unmarshal data with error code: %v\n", err)
+			continue
+		}
+
+		// Actually send data to the respective channel
+		reflect.Select([]reflect.SelectCase{{
+			Dir:  reflect.SelectSend,
+			Chan: reflect.ValueOf(channel),
+			Send: reflect.Indirect(value),
+		}})
+
+		conn.Write([]byte("ACK"))
+
+		conn.Close()
+	}
+}
+
+// ----------------- [Endring av Recieve-funksjon] ---------------
+func Receive3pkt0(conn net.Conn, data ...interface{}) {
+
+	channels := make(map[string]interface{}) // a map with called channels with each data's type, written as a string, as keys
+
+	for _, channel := range data {
+		if channel == nil || reflect.TypeOf(channel).Kind() != reflect.Chan {
+			panic("Arguments contains one or more non channel type\n")
+		}
+
+		channels[reflect.TypeOf(channel).Elem().Name()] = channel
 	}
 
 	var tj TaggedJson
 	buffer := make([]byte, 1024)
 	for {
-		conn, err := listener.Accept()
 
-		//her burde det vel være en handler som tar inn conn?
-
-		if err != nil {
-			fmt.Printf("[error] Failed to create connection with error: %v\n", err)
-			continue
-		}
+		select {}
 
 		length, err := conn.Read(buffer)
 
@@ -374,7 +416,7 @@ func AddConnections(id string, connsUpdateCh chan map[string]net.Conn, peerchan 
 			conns = c
 			//fmt.Println("Updated connections:", c)
 			//fmt.Println("Connections lagt til:", conns)
-			connsCh <- conns
+			connsCh <- conns // Må ha dennne, ikke fjern den Anders! (kanskje?)
 		case c := <-peerchan:
 			if c.Master == "" {
 				c.Master = id
@@ -408,7 +450,7 @@ func SendAndReceive(connsCh chan map[string]net.Conn) {
 	}
 }
 
-func SlavePeerUpdateRx(peerUpdateRx chan peers.PeerUpdate, slaveTxCh chan string) {
+func GetIdOfNewMaster(peerUpdateRx chan peers.PeerUpdate, sendToMasterCh chan string) {
 	master := ""
 	for {
 		select {
@@ -417,20 +459,20 @@ func SlavePeerUpdateRx(peerUpdateRx chan peers.PeerUpdate, slaveTxCh chan string
 			fmt.Println()
 			if p.Master != master {
 				master = p.Master
-				slaveTxCh <- p.Master
+				sendToMasterCh <- p.Master
 			}
 		}
 	}
 }
 
-func NotifyMaster(port string, id string, slaveTxCh chan string) {
+func NotifyMaster(port string, id string, sendToMasterCh chan string) {
 	for {
 		select {
-		case m := <-slaveTxCh:
+		case m := <-sendToMasterCh:
 			masterIp := peers.ExtractIpFromPeer(m)
 			fmt.Println("Master IP:", masterIp)
 			tcpConn, err := TransmitConn(port, id, masterIp)
-			fmt.Printf("Her1\n")
+			//fmt.Printf("Her1\n")
 			if err != nil {
 				fmt.Printf("[error] Failed to Dial: %v\n", err)
 				return
@@ -439,3 +481,91 @@ func NotifyMaster(port string, id string, slaveTxCh chan string) {
 		}
 	}
 }
+
+// --------------------------[Bare noe testing]------------------------------------
+func Transmiter(conn net.Conn, data interface{}) {
+
+	buffer, err := json.Marshal(data)
+	if err != nil {
+		fmt.Printf("[error] Failed to encode data with error: %v\n", err)
+		return
+	}
+
+	buffer, err = json.Marshal(TaggedJson{reflect.TypeOf(data).Name(), buffer})
+	if err != nil {
+		fmt.Printf("[error] Failed to make buffer with error:")
+	}
+
+	_, err = conn.Write(buffer)
+	if err != nil {
+		fmt.Printf("[error] Failed to write: %v\n", err)
+		return
+	}
+
+	// n, err := conn.Read(buffer)
+	// if err != nil {
+	// 	fmt.Printf("[error] Failed to read: %v\n", err)
+	// 	return
+	// }
+	// fmt.Printf("Read: %v\n", string(buffer[0:n]))
+}
+
+func Receiver(conn net.Conn, data ...interface{}) {
+
+	channels := make(map[string]interface{}) // a map with called channels with each data's type, written as a string, as keys
+
+	for _, channel := range data {
+		if channel == nil || reflect.TypeOf(channel).Kind() != reflect.Chan {
+			panic("Arguments contains one or more non channel type\n")
+		}
+
+		channels[reflect.TypeOf(channel).Elem().Name()] = channel
+	}
+
+	var tj TaggedJson
+	buffer := make([]byte, 1024)
+	for {
+
+		length, err := conn.Read(buffer)
+
+		if err != nil {
+			fmt.Printf("[error] Failed to read from connection with error: %v\n", err)
+			continue
+		}
+
+		err = json.Unmarshal(buffer[0:length], &tj)
+
+		if err != nil {
+			fmt.Printf("[error] Failed to marshal JSON with error: %v", err)
+			continue
+		}
+
+		channel, ok := channels[tj.Type]
+
+		if !ok {
+			fmt.Printf("[warning] Recieved type we are not listening to: %v\n", tj.Type)
+			continue
+		}
+
+		value := reflect.New(reflect.TypeOf(channel).Elem())
+
+		err = json.Unmarshal(tj.JSON, value.Interface()) // lagrer dataen vi har fått fra transmitter. Vi lagrer dette i value
+
+		if err != nil {
+			fmt.Printf("[error] Failed to unmarshal data with error code: %v\n", err)
+			continue
+		}
+
+		// Actually send data to the respective channel
+		reflect.Select([]reflect.SelectCase{{
+			Dir:  reflect.SelectSend,
+			Chan: reflect.ValueOf(channel),
+			Send: reflect.Indirect(value),
+		}})
+
+		//conn.Write([]byte("ACK"))
+
+	}
+}
+
+//----------------------------------------------------------------------------
