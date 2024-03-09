@@ -13,6 +13,7 @@ type PeerUpdate struct {
 	Peers []string
 	New   string
 	Lost  []string
+	Master string
 }
 
 const interval = 15 * time.Millisecond
@@ -72,6 +73,18 @@ func Receiver(port int, peerUpdateCh chan<- PeerUpdate) {
 			}
 		}
 
+		// Adding new Master
+		p.Master = ""
+		if id != "" {
+			if _, idExists := lastSeen[id]; !idExists {
+				p.Master = id
+				updated = true
+			}
+
+			lastSeen[id] = time.Now()
+		}
+		//---------------------------
+
 		// Sending update
 		if updated {
 			p.Peers = make([]string, 0, len(lastSeen))
@@ -93,6 +106,7 @@ func PrintUpdatedPeers(p PeerUpdate) {
 	fmt.Printf("  Peers:    %q\n", p.Peers)
 	fmt.Printf("  New:      %q\n", p.New)
 	fmt.Printf("  Lost:     %q\n", p.Lost)
+	fmt.Printf("  Master:     %q\n", p.Master)
 }
 
 

@@ -3,12 +3,12 @@ package tcp
 import (
 	"Heis/elevator"
 	"Heis/network/localip"
+	"Heis/network/peers"
 	"encoding/json"
 	"fmt"
 	"net"
 	"reflect"
 	"time"
-	"sync"
 )
 
 /**
@@ -286,11 +286,9 @@ func Receive2pkt0(port int, data ...interface{}) {
 
 // To varianter av Receive og Transmit som bare returnerer en connection
 
+// var connectionsMutex sync.Mutex
 
-var connectionsMutex sync.Mutex
-
-
-func ReceiveConn(port string, connections map[string]net.Conn, connectionsCh chan<- map[string]net.Conn) (net.Conn, error) {
+func ReceiveConn(port string, connectionsCh chan<- map[string]net.Conn) (net.Conn, error) {
 	// Resolve address
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:"+port)
 	if err != nil {
@@ -307,6 +305,8 @@ func ReceiveConn(port string, connections map[string]net.Conn, connectionsCh cha
 
 	fmt.Println("Server listening on", addr.String())
 
+	connections := make(map[string]net.Conn)
+
 	// Accept incoming connections
 	buffer := make([]byte, 1024)
 	for {
@@ -316,7 +316,6 @@ func ReceiveConn(port string, connections map[string]net.Conn, connectionsCh cha
 			continue
 		}
 		fmt.Println("Accepted connection on port: " + port)
-		fmt.Println("Her er jeg!")
 
 		// [Her leser jeg slavens ID]
 		k, err := tcpConn.Read(buffer)
@@ -325,38 +324,31 @@ func ReceiveConn(port string, connections map[string]net.Conn, connectionsCh cha
 			return nil, err
 		}
 		id := string(buffer[0:k])
-		// ----
-		n, err := tcpConn.Read(buffer)
-		if err != nil {
-			fmt.Printf("[error] Failed to read: %v\n", err)
-			return nil, err
-		}
-		fmt.Printf("Read: %v\n", string(buffer[0:n]))
-		//go HandleConn(tcpConn, connections, connectionsCh)
-		 
+		// --------------------------------
+		fmt.Printf("Read: %v\n", id)
+		fmt.Printf("Sjå på her da da: %v\n", connections)
+
 		// Update connections map
-		//remoteAddr := tcpConn.RemoteAddr().String() // foreløpig er bare keyen Ip-adressen til remote connection. Burde være peer
-		if connections == nil {
-			connections = make(map[string]net.Conn)
-		}
-		connectionsMutex.Lock()
+		//HandleConn(tcpConn, id, &connections, connectionsCh)
 		connections[id] = tcpConn
-		connectionsMutex.Unlock()
- 
-		// Send the updated connections map over the channel
 		connectionsCh <- connections
+
 	}
 }
 
-func HandleConn(conn net.Conn, connections map[string]net.Conn, connectionsCh chan<- map[string]net.Conn) map[string]net.Conn {
-	remoteAddr := conn.RemoteAddr().String() // foreløpig er bare keyen Ip-adressen til remote connection. Burde være peer
-	if connections == nil {
-		connections = make(map[string]net.Conn)
-	}
-	connections[remoteAddr] = conn
-	connectionsCh <- connections
-	return connections
-}
+// func HandleConn(conn net.Conn, id string, connections *map[string]net.Conn, connectionsCh chan<- map[string]net.Conn) {
+// 	//remoteAddr := conn.RemoteAddr().String() // foreløpig er bare keyen Ip-adressen til remote connection. Burde være peer
+// 	if *connections == nil {
+// 		*connections = make(map[string]net.Conn)
+// 	}
+// 	connectionsMutex.Lock()
+// 	defer connectionsMutex.Unlock()
+// 	fmt.Printf("Sjå på her da: %v\n", *connections)
+// 	(*connections)[id] = conn
+// 	fmt.Printf("Sjå på her: %v\n", *connections)
+// 	connectionsCh <- *connections
+// 	//return connections
+// }
 
 func TransmitConn(port string, id string) (net.Conn, error) {
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:"+port) // dette er bare foreløpig. IP-som mates inn må være destinasjonen
@@ -369,5 +361,47 @@ func TransmitConn(port string, id string) (net.Conn, error) {
 		fmt.Printf("[error] Failed to Dial: %v\n", err)
 		return nil, err
 	}
+	tcpConn.Write([]byte(id))
 	return tcpConn, err
+}
+
+func AddConnections(id string, connsUpdateCh chan map[string]net.Conn, peerchan chan peers.PeerUpdate, connsCh chan map[string]net.Conn) {
+	var conns map[string]net.Conn
+	for {
+		select {
+		case c := <-connsUpdateCh:
+			conns = c
+			//fmt.Println("Updated connections:", c)
+			fmt.Println("Connections lagt til:", conns)
+			connsCh <- conns
+		case c := <-peerchan:
+			if c.Master == "" {
+				c.Master = id
+			}
+			peers.PrintUpdatedPeers(c)
+			fmt.Println("Peer update:", c)
+			for i := 0; i < len(c.Lost); i++ {
+				for k := range conns {
+					if k == c.Lost[i] {
+						delete(conns, k)
+					}
+				}
+			}
+			fmt.Printf("Connections update fra peer: %v\n", conns)
+			connsCh <- conns
+
+		}
+	}
+}
+
+func SendAndReceive(connsCh chan map[string]net.Conn) {
+	var conns map[string]net.Conn
+	for {
+		select {
+		case c := <-connsCh:
+			conns = c
+			//fmt.Println("Send and receive sin conn liste", c)
+			fmt.Println("Send and receive sin conn liste", conns)
+		}
+	}
 }

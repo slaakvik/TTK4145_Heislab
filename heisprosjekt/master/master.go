@@ -35,7 +35,7 @@ func ChooseMasterIndex(peersProcessId []string) (int, error) {
 			SmallestProcessIdIndex = i
 		}
 	}
-	return SmallestProcessIdIndex, nil
+	return SmallestProcessIdIndex, err
 }
 
 func ChooseMaster(masterIdIndex int, p peers.PeerUpdate) string {
