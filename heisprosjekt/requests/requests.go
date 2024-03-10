@@ -3,6 +3,7 @@ package requests
 import (
 	"Heis/driver-go/elevio"
 	"Heis/elevator"
+	"fmt"
 )
 
 var _numFloors int = elevio.NumFloors
@@ -11,6 +12,26 @@ var _numButtons int = elevio.NumButtons
 type DirnBehaviourPair struct {
 	Dirn      elevio.MotorDirection
 	Behaviour elevator.ElevatorBehaviour
+}
+
+func OnRequest(elev elevator.Elevator, HallRequests [][2]bool) elevator.Elevator {
+	switch elev.Behaviour {
+	case elevator.EB_DoorOpen:
+		elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
+		fmt.Println("Door open")
+	case elevator.EB_Moving:
+		elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
+
+	case elevator.EB_Idle:
+		elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
+		pair := Requests_chooseDirection(elev)
+		elev.Dirn = pair.Dirn
+		elevio.SetMotorDirection(elev.Dirn)
+		elev.Behaviour = pair.Behaviour
+	}
+
+	elevator.SetAllLights(elev)
+	return elev
 }
 
 func requests_above(e elevator.Elevator) bool {
@@ -106,7 +127,7 @@ func Requests_shouldClearImmediately(e elevator.Elevator, btn_floor int, btn_typ
 	} //Må man ha klammeparentes her?
 }
 
-func Requests_clearAtCurrentFloor(e elevator.Elevator) elevator.Elevator { 
+func Requests_clearAtCurrentFloor(e elevator.Elevator) elevator.Elevator {
 	e.Requests[e.Floor][elevio.BT_Cab] = false
 	switch e.Dirn {
 	case elevio.MD_Up:

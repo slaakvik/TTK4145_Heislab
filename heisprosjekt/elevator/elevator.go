@@ -19,8 +19,19 @@ type Elevator struct {
 	Requests  [elevio.NumFloors][elevio.NumButtons]bool
 	Behaviour ElevatorBehaviour
 	ElevID    string
+	Failure   bool
 	//DoorOpenDuration_s float32
 	//DoorOpen           bool
+}
+
+func SetAllLights(elev Elevator) {
+	for f := 0; f < elevio.NumFloors; f++ {
+		for b := 0; b < elevio.NumButtons; b++ {
+			elevio.SetButtonLamp(elevio.ButtonType(b), f, elev.Requests[f][b])
+		}
+	}
+	elevio.SetDoorOpenLamp(elev.Behaviour == EB_DoorOpen)
+
 }
 
 // func Elevator_print(

@@ -5,18 +5,172 @@ import (
 	"Heis/driver-go/elevio"
 	"Heis/elevator"
 	"Heis/requests"
+	"Heis/timer"
 	"fmt"
 	"time"
 )
 
 // Finite state machine
 
-func FSM(buttons chan elevio.ButtonEvent, floors chan int, stop chan bool, obstr chan bool, elevatorID string, isMaster bool, sendElev chan elevator.Elevator, updatedCostTx chan map[string][][2]bool, masterNewOrder chan map[string][][2]bool, receiveElev chan elevator.Elevator, updatedCostRx chan map[string][][2]bool) {
+func ButtonsAndRequests(elevatorID string, isMaster bool, elevUpdateBtnAndOrdersCh chan<- elevator.Elevator, elevUpdateRealtimeCh <-chan elevator.Elevator, drv_buttons chan elevio.ButtonEvent, ElevatorTx chan elevator.Elevator, CostTx chan map[string][][2]bool, ElevatorRx chan elevator.Elevator, CostRx chan map[string][][2]bool) {
+	elev := elevator.InitElev()
+	elev.ElevID = elevatorID
+	elevUpdateBtnAndOrdersCh <- elev
+
+	if elevio.GetFloor() == -1 {
+		elev = elevator.OnInitBetweenFloors(elev)
+		elevUpdateBtnAndOrdersCh <- elev
+		elevator.Elevator_print(elev)
+	}
+
+	//dersom man er master skal man sette opp en cost func map og legge til seg selv:
+	mapOfElevs := make(map[string]elevator.Elevator)
+	fmt.Println(mapOfElevs)
+	fmt.Println("______________")
+
+	for {
+		select {
+		case a := <-elevUpdateRealtimeCh:
+			elev = a
+			mapOfElevs[elev.ElevID] = elev
+		case a := <-drv_buttons:
+			btn_floor := a.Floor
+			btn_type := a.Button
+			fmt.Printf("Button: %+v\n", a)
+
+			if elev.Behaviour != elevator.EB_Moving && requests.Requests_shouldClearImmediately(elev, btn_floor, btn_type) {
+
+				elev.Behaviour = elevator.EB_DoorOpen
+				elevUpdateBtnAndOrdersCh <- elev
+
+				mapOfElevs[elev.ElevID] = elev
+				sendElevToMaster(isMaster, ElevatorTx, elev)
+				elevator.SetAllLights(elev)
+				go func() {
+
+					quit := make(chan int)
+					go timer.DoorTimer(quit)
+					<-quit
+				}()
+				elev = timer.OnDoorTimeout(elev)
+				elevUpdateBtnAndOrdersCh <- elev
+				elevio.SetMotorDirection(elev.Dirn)
+
+			} else {
+				if isMaster {
+					if btn_type == 2 {
+						fmt.Println("cab callll")
+						elev.Requests[btn_floor][btn_type] = true
+						fmt.Println("elev: ")
+						elevUpdateBtnAndOrdersCh <- elev
+						fmt.Println("Den kommer ikke hit")
+						mapOfElevs[elev.ElevID] = elev
+						fmt.Println(mapOfElevs)
+					} else {
+						temp_elev := elev
+						temp_elev.Requests[btn_floor][btn_type] = true
+						mapOfElevs[elev.ElevID] = temp_elev
+					}
+					costFunctionResults := cost_fns.RunCostFunc(mapOfElevs)
+					CostTx <- costFunctionResults
+
+					MyNewHRs := costFunctionResults[elev.ElevID]
+					elev = requests.OnRequest(elev, MyNewHRs)
+					elevUpdateBtnAndOrdersCh <- elev
+					mapOfElevs[elev.ElevID] = elev
+
+				} else {
+					if btn_type == 2 {
+						elev.Requests[btn_floor][btn_type] = true
+						ElevatorTx <- elev
+					} else {
+						temp_elev := elev
+						temp_elev.Requests[btn_floor][btn_type] = true
+						ElevatorTx <- temp_elev
+					}
+				}
+			}
+		case a := <-ElevatorRx:
+			if isMaster {
+				mapOfElevs[a.ElevID] = a
+				costFunctionResults := cost_fns.RunCostFunc(mapOfElevs)
+				CostTx <- costFunctionResults
+				MyNewHRs := costFunctionResults[elev.ElevID]
+				elev = requests.OnRequest(elev, MyNewHRs)
+				elevUpdateBtnAndOrdersCh <- elev
+				mapOfElevs[elev.ElevID] = elev
+			}
+		case a := <-CostRx:
+			if !isMaster {
+				MyNewHRs := a[elev.ElevID]
+				elev = requests.OnRequest(elev, MyNewHRs)
+				elevUpdateBtnAndOrdersCh <- elev
+				mapOfElevs[elev.ElevID] = elev
+				sendElevToMaster(isMaster, ElevatorTx, elev)
+			}
+
+		}
+	}
+}
+
+func FloorObstrStop(isMaster bool, elevUpdateBtnAndOrdersCh <-chan elevator.Elevator, elevUpdateRealtimeCh chan<- elevator.Elevator, drv_floors chan int, drv_stop chan bool, drv_obstr chan bool, ElevatorTx chan<- elevator.Elevator) {
+	elev := elevator.InitElev()
+
+	for {
+		select {
+		case a := <-elevUpdateBtnAndOrdersCh:
+			elev = a
+			fmt.Println("Elev floor at btn press: ", elev.Floor)
+		case a := <-drv_floors:
+			fmt.Printf("Floor: %+v\n", a)
+			elev.Floor = a
+			elevUpdateRealtimeCh <- elev
+			elevio.SetFloorIndicator(elev.Floor)
+			sendElevToMaster(isMaster, ElevatorTx, elev)
+			switch elev.Behaviour {
+			case elevator.EB_Moving:
+				go func() {
+					if requests.Requests_shouldStop(elev) {
+						elevio.SetMotorDirection(elevio.MD_Stop)
+						elev.Behaviour = elevator.EB_DoorOpen
+						elevUpdateRealtimeCh <- elev
+						sendElevToMaster(isMaster, ElevatorTx, elev)
+						elevator.SetAllLights(elev)
+						// quit := make(chan int)
+						// go timer.DoorTimer(quit)
+						// <-quit
+						time.Sleep(3 * time.Second)
+						elev = timer.OnDoorTimeout(elev)
+						elevUpdateRealtimeCh <- elev
+						elevio.SetMotorDirection(elev.Dirn)
+						sendElevToMaster(isMaster, ElevatorTx, elev)
+						fmt.Println("Managed to send floor update")
+					}
+				}()
+			default:
+
+			}
+		case a := <-drv_stop:
+			fmt.Printf("Stop button: %+v\n", a)
+			stop_functionality(a, elev)
+
+		case a := <-drv_obstr:
+			fmt.Printf("Obstruction %+v\n", a)
+			elev = obstruction_functionality(a, elev)
+			elevUpdateRealtimeCh <- elev
+			sendElevToMaster(isMaster, ElevatorTx, elev)
+
+		}
+	}
+
+}
+
+/*func FSM(buttons chan elevio.ButtonEvent, floors chan int, stop chan bool, obstr chan bool, elevatorID string, isMaster bool, sendElev chan elevator.Elevator, updatedCostTx chan map[string][][2]bool, masterNewOrder chan map[string][][2]bool, receiveElev chan elevator.Elevator, updatedCostRx chan map[string][][2]bool) {
 	elev := elevator.InitElev()
 	elev.ElevID = elevatorID
 
 	if elevio.GetFloor() == -1 {
-		elev = onInitBetweenFloors(elev)
+		elev = elevator.OnInitBetweenFloors(elev)
 		elevator.Elevator_print(elev)
 	}
 
@@ -35,6 +189,8 @@ func FSM(buttons chan elevio.ButtonEvent, floors chan int, stop chan bool, obstr
 		//elevator.Elevator_print(elev)
 		//fmt.Print(eleviId)
 		select {
+		// case a := <-elevChange:
+		// 	elev = a
 		case a := <-buttons:
 			btn_floor := a.Floor
 			btn_type := a.Button
@@ -43,14 +199,16 @@ func FSM(buttons chan elevio.ButtonEvent, floors chan int, stop chan bool, obstr
 
 			if elev.Behaviour != elevator.EB_Moving && requests.Requests_shouldClearImmediately(elev, btn_floor, btn_type) {
 				elev.Behaviour = elevator.EB_DoorOpen
+				//elevChange <- elev
 				mapOfElevs[elev.ElevID] = elev
 				sendElevToMaster(isMaster, sendElev, elev)
 
-				setAllLights(elev)
+				elevator.SetAllLights(elev)
 				quit := make(chan int)
-				go doorTimer(quit)
+				go timer.DoorTimer(quit)
 				<-quit
-				elev = onDoorTimeout(elev)
+				elev = timer.OnDoorTimeout(elev)
+				elevio.SetMotorDirection(elev.Dirn)
 
 			} else {
 				if isMaster {
@@ -59,31 +217,14 @@ func FSM(buttons chan elevio.ButtonEvent, floors chan int, stop chan bool, obstr
 						elev.Requests[btn_floor][btn_type] = true
 						mapOfElevs[elev.ElevID] = elev
 						fmt.Println(mapOfElevs)
-
-						// //Her må vi kjøre cost funcksjonen
-						// runcostresult := runCostFunc(mapOfElevs)
-						// //Sende resultat fra cost funksjon til alle.
-						// updatedCostTx <- runcostresult
-
-						// MyNewHRs := runcostresult[elev.ElevID]
-						// elev = onRequest(elev, MyNewHRs)
-						// mapOfElevs[elev.ElevID] = elev
 					} else {
 						temp_elev := elev
 						temp_elev.Requests[btn_floor][btn_type] = true
 						mapOfElevs[elev.ElevID] = temp_elev
-						// //Her må vi kjøre cost funcksjonen
-						// runcostresult := runCostFunc(mapOfElevs)
-						// //Sende resultat fra cost funksjon til alle.
-						// updatedCostTx <- runcostresult
-						// fmt.Println("Hall calllll")
-						// // masterNewOrder <- runcostresult
-						// MyNewHRs := runcostresult[elev.ElevID]
-						// elev = onRequest(elev, MyNewHRs)
-						// mapOfElevs[elev.ElevID] = elev
+
 					}
 					//Her må vi kjøre cost funcksjonen
-					runcostresult := runCostFunc(mapOfElevs)
+					runcostresult := cost_fns.RunCostFunc(mapOfElevs)
 					//Sende resultat fra cost funksjon til alle.
 					updatedCostTx <- runcostresult
 					//fmt.Println(mapOfElevs)
@@ -94,7 +235,7 @@ func FSM(buttons chan elevio.ButtonEvent, floors chan int, stop chan bool, obstr
 					fmt.Println()
 
 					MyNewHRs := runcostresult[elev.ElevID]
-					elev = onRequest(elev, MyNewHRs)
+					elev = requests.OnRequest(elev, MyNewHRs)
 					mapOfElevs[elev.ElevID] = elev
 
 				} else {
@@ -115,7 +256,7 @@ func FSM(buttons chan elevio.ButtonEvent, floors chan int, stop chan bool, obstr
 			if isMaster {
 				mapOfElevs[a.ElevID] = a
 				//Her må vi kjøre cost funcksjonen
-				runcostresult := runCostFunc(mapOfElevs)
+				runcostresult := cost_fns.RunCostFunc(mapOfElevs)
 				fmt.Println()
 				fmt.Println(runcostresult)
 				fmt.Println()
@@ -124,7 +265,7 @@ func FSM(buttons chan elevio.ButtonEvent, floors chan int, stop chan bool, obstr
 				updatedCostTx <- runcostresult
 				//masterNewOrder <- runcostresult
 				MyNewHRs := runcostresult[elev.ElevID]
-				elev = onRequest(elev, MyNewHRs)
+				elev = requests.OnRequest(elev, MyNewHRs)
 				mapOfElevs[elev.ElevID] = elev
 			}
 		// case a := <-masterNewOrder:
@@ -139,7 +280,7 @@ func FSM(buttons chan elevio.ButtonEvent, floors chan int, stop chan bool, obstr
 			if !isMaster {
 				//fmt.Printf("CostRx: %+v\n", a)
 				MyNewHRs := a[elev.ElevID]
-				elev = onRequest(elev, MyNewHRs)
+				elev = requests.OnRequest(elev, MyNewHRs)
 				mapOfElevs[elev.ElevID] = elev
 				//fmt.Println(mapOfElevs)
 				sendElevToMaster(isMaster, sendElev, elev)
@@ -162,11 +303,12 @@ func FSM(buttons chan elevio.ButtonEvent, floors chan int, stop chan bool, obstr
 					elev.Behaviour = elevator.EB_DoorOpen
 					mapOfElevs[elev.ElevID] = elev
 					sendElevToMaster(isMaster, sendElev, elev)
-					setAllLights(elev)
+					elevator.SetAllLights(elev)
 					quit := make(chan int)
-					go doorTimer(quit)
+					go timer.DoorTimer(quit)
 					<-quit
-					elev = onDoorTimeout(elev)
+					elev = timer.OnDoorTimeout(elev)
+					elevio.SetMotorDirection(elev.Dirn)
 				}
 				mapOfElevs[elev.ElevID] = elev
 				sendElevToMaster(isMaster, sendElev, elev)
@@ -183,30 +325,33 @@ func FSM(buttons chan elevio.ButtonEvent, floors chan int, stop chan bool, obstr
 		}
 	}
 }
-
+*/
 // Timer goroutine
-func doorTimer( /*elev *elevator.Elevator,*/ quit chan int) { // Door opens for three seconds
-	time.Sleep(3 * time.Second)
-	quit <- 1
-}
+// Kanskje legge denn inn i en egen go routine slik at vi fortsatt kan ta ordre?.
 
-func sendElevToMaster(isMaster bool, updateElev chan elevator.Elevator, elev elevator.Elevator) {
+func sendElevToMaster(isMaster bool, updateElev chan<- elevator.Elevator, elev elevator.Elevator) {
 	if !isMaster {
 		updateElev <- elev
 	}
 }
 
-func obstruction_functionality(obstruct bool, elev elevator.Elevator) {
+// etterhvert: fiks sånn at master blir klar over at heisen er obstructed (Må ha en "failure state" i elevator structet)
+func obstruction_functionality(obstruct bool, elev elevator.Elevator) elevator.Elevator {
 	if obstruct {
 		elevio.SetMotorDirection(elevio.MD_Stop)
 		if elevio.GetFloor() != -1 {
 			elevio.SetDoorOpenLamp(true)
 		}
+		elev.Failure = true
+
 	} else {
 		elevio.SetMotorDirection(elev.Dirn)
-		setAllLights(elev)
+		elevator.SetAllLights(elev)
+		elev.Failure = false
 	}
+	return elev
 }
+
 func stop_functionality(stop bool, elev elevator.Elevator) {
 	if stop {
 		elevio.SetMotorDirection(elevio.MD_Stop)
@@ -215,72 +360,6 @@ func stop_functionality(stop bool, elev elevator.Elevator) {
 		elevio.SetMotorDirection(elev.Dirn)
 		elevio.SetStopLamp(false)
 	}
-}
-
-func onInitBetweenFloors(elev elevator.Elevator) elevator.Elevator {
-
-	elevio.SetMotorDirection(elevio.MD_Down)
-	elev.Behaviour = elevator.EB_Moving
-	elev.Dirn = elevio.MD_Down
-	return elev
-}
-
-func setAllLights(elev elevator.Elevator) {
-	for f := 0; f < elevio.NumFloors; f++ {
-		for b := 0; b < elevio.NumButtons; b++ {
-			elevio.SetButtonLamp(elevio.ButtonType(b), f, elev.Requests[f][b])
-		}
-	}
-	elevio.SetDoorOpenLamp(elev.Behaviour == elevator.EB_DoorOpen)
-
-}
-
-func runCostFunc(elevMap map[string]elevator.Elevator) map[string][][2]bool {
-	input := cost_fns.InputToCost(elevMap)
-	return cost_fns.GetCostOutput(input)
-}
-
-func onDoorTimeout(elev elevator.Elevator) elevator.Elevator {
-
-	//printf("\n\n%s()\n", __FUNCTION__);
-	//elevator_print(elevator);
-
-	elev = requests.Requests_clearAtCurrentFloor(elev)
-	pair := requests.Requests_chooseDirection(elev)
-	elev.Dirn = pair.Dirn
-	elev.Behaviour = pair.Behaviour
-	setAllLights(elev)
-	if elev.Behaviour == elevator.EB_DoorOpen {
-		quit := make(chan int)
-		go doorTimer(quit)
-		<-quit
-		elev = onDoorTimeout(elev)
-	}
-	elevio.SetMotorDirection(elev.Dirn) //Det er her det skjærer seg (?), den klarer ikke å ha to hall calls i samme etasje, og ingen andre requests.
-
-	//fmt.Println("\nNew state:")
-	//elevator.Elevator_print(*elev)
-	return elev
-}
-
-func onRequest(elev elevator.Elevator, HallRequests [][2]bool) elevator.Elevator {
-	switch elev.Behaviour {
-	case elevator.EB_DoorOpen:
-		elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
-		fmt.Println("HeiHei")
-	case elevator.EB_Moving:
-		elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
-
-	case elevator.EB_Idle:
-		elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
-		pair := requests.Requests_chooseDirection(elev)
-		elev.Dirn = pair.Dirn
-		elevio.SetMotorDirection(elev.Dirn)
-		elev.Behaviour = pair.Behaviour
-	}
-
-	setAllLights(elev)
-	return elev
 }
 
 // func onFloorArrival(elev *elevator.Elevator, newFloor int) { //elevptr

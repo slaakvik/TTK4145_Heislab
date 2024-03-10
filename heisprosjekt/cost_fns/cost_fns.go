@@ -23,26 +23,36 @@ type HRAInput struct {
 	States       map[string]HRAElevState `json:"states"`
 }
 
-// func InputToCost() HRAInput {
-// 	input := HRAInput{
-// 		HallRequests: [][2]bool{{false, false}, {true, false}, {false, false}, {false, true}},
-// 		States: map[string]HRAElevState{
-// 			"one": HRAElevState{
-// 				Behavior:    "moving",
-// 				Floor:       2,
-// 				Direction:   "up",
-// 				CabRequests: []bool{false, false, false, true},
-// 			},
-// 			"two": HRAElevState{
-// 				Behavior:    "idle",
-// 				Floor:       0,
-// 				Direction:   "stop",
-// 				CabRequests: []bool{false, false, false, false},
-// 			},
-// 		},
-// 	}
-// 	return input
-// }
+//	func InputToCost() HRAInput {
+//		input := HRAInput{
+//			HallRequests: [][2]bool{{false, false}, {true, false}, {false, false}, {false, true}},
+//			States: map[string]HRAElevState{
+//				"one": HRAElevState{
+//					Behavior:    "moving",
+//					Floor:       2,
+//					Direction:   "up",
+//					CabRequests: []bool{false, false, false, true},
+//				},
+//				"two": HRAElevState{
+//					Behavior:    "idle",
+//					Floor:       0,
+//					Direction:   "stop",
+//					CabRequests: []bool{false, false, false, false},
+//				},
+//			},
+//		}
+//		return input
+//	}
+func RunCostFunc(elevMap map[string]elevator.Elevator) map[string][][2]bool {
+	for k, v := range elevMap {
+		if v.Failure {
+			delete(elevMap, k)
+		}
+	}
+
+	input := inputToCost(elevMap)
+	return getCostOutput(input)
+}
 
 func elevToHRAElevState(elev elevator.Elevator) HRAElevState {
 	return HRAElevState{
@@ -63,7 +73,7 @@ func orHallCalls(allElevs map[string]elevator.Elevator) [][2]bool {
 	}
 	return result
 }
-func InputToCost(elevMap map[string](elevator.Elevator)) HRAInput {
+func inputToCost(elevMap map[string](elevator.Elevator)) HRAInput {
 	commonHallCalls := orHallCalls(elevMap)
 
 	stateMap := map[string]HRAElevState{}
@@ -88,7 +98,7 @@ func InputToCost(elevMap map[string](elevator.Elevator)) HRAInput {
 // 	return input
 // }
 
-func HRA_funcs(input HRAInput, output *map[string][][2]bool, hraExecutable string) {
+func hra_funcs(input HRAInput, output *map[string][][2]bool, hraExecutable string) {
 
 	jsonBytes, err := json.Marshal(input)
 	if err != nil {
@@ -110,11 +120,11 @@ func HRA_funcs(input HRAInput, output *map[string][][2]bool, hraExecutable strin
 	}
 
 }
-func GetCostOutput(input HRAInput) map[string][][2]bool {
+func getCostOutput(input HRAInput) map[string][][2]bool {
 	hraExecutable := "hall_request_assigner"
 	output := new(map[string][][2]bool)
 
-	HRA_funcs(input, output, hraExecutable)
+	hra_funcs(input, output, hraExecutable)
 
 	return *output
 }

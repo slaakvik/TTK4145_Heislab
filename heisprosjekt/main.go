@@ -33,7 +33,8 @@ func main() {
 
 	//Initialiserer en heisstruct
 	//elev := elevator.InitElev()
-
+	elevUpdateBtnAndOrdersCh := make(chan elevator.Elevator)
+	elevUpdateRealtimeCh := make(chan elevator.Elevator)
 	drv_buttons := make(chan elevio.ButtonEvent)
 	drv_floors := make(chan int)
 	drv_obstr := make(chan bool)
@@ -65,7 +66,7 @@ func main() {
 	go bcast.Receiver(16524, CostRx)
 	//Master slave
 	isMaster := true
-	masterOrders := make(chan map[string][][2]bool)
+	//masterOrders := make(chan map[string][][2]bool)
 
 	fmt.Printf("Started!\n")
 	//cost function test:
@@ -77,7 +78,10 @@ func main() {
 	// 	elev = fsm.OnInitBetweenFloors(elev)
 	// 	elevator.Elevator_print(elev)
 	// }
-	go fsm.FSM(drv_buttons, drv_floors, drv_stop, drv_obstr, eleviId, isMaster, ElevatorTx, CostTx, masterOrders, ElevatorRx, CostRx)
+	go fsm.ButtonsAndRequests(eleviId, isMaster, elevUpdateBtnAndOrdersCh, elevUpdateRealtimeCh, drv_buttons, ElevatorTx, CostTx, ElevatorRx, CostRx)
+	go fsm.FloorObstrStop(isMaster, elevUpdateBtnAndOrdersCh, elevUpdateRealtimeCh, drv_floors, drv_stop, drv_obstr, ElevatorTx)
+
+	//go fsm.FSM(drv_buttons, drv_floors, drv_stop, drv_obstr, eleviId, isMaster, ElevatorTx, CostTx, masterOrders, ElevatorRx, CostRx)
 	go netfuncs.Network_FSM(peerUpdateCh)
 	select {}
 }
