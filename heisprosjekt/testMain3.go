@@ -6,11 +6,11 @@ import (
 	"Heis/network/tcp"
 	"flag"
 	"fmt"
-	"net"
+	//"net"
 	"os"
 )
 
-var masterPort = "8091"
+var masterPort = "8039"
 
 //var slavePort = "8074"
 
@@ -26,16 +26,70 @@ func CheckId() string {
 	return id
 }
 
+func PeerLytter(peerCh <-chan tcp.Peer, guttaneCh <-chan map[string]tcp.Peer) { //burde vel være read only kanal? siden den bare skal motta på
+	//connections := make(map[string]net.Conn)
+	for {
+		select {
+		case a := <-peerCh:
+			//conne
+			fmt.Printf("Ludvig ser slik ut han:\n")
+			fmt.Printf("  id:    %v\n", a.Id)
+			fmt.Printf("  Floors:      %v\n", a.Floors)
+			fmt.Printf("  Color:     %v\n", a.Color)
+			//case a:= <-connectionsCh:
+
+		case a := <-guttaneCh:
+			//fmt.Println(a)
+			for k, v := range a {
+				println()
+				fmt.Printf("Nøkkel: %v\n", k)
+				fmt.Printf("Her er structet: %v\n", v)
+				println()
+			}
+
+		}
+	}
+
+}
+
 func main() {
 	//kalosj! 500
 
 	id := CheckId() //set the id to default if id is not provided at launch
+	// lager et map med ulike Peers
 
-	connectionsUpdateCh := make(chan map[string]net.Conn)
+	peerLudvig := tcp.Peer{
+		Id:     id,
+		Floors: 10,
+		Color:  "blue",
+	}
 
-	connectionsCh := make(chan map[string]net.Conn)
+	peerJonathan := tcp.Peer{
+		Id:     "Jonathan",
+		Floors: 12,
+		Color:  "green",
+	}
 
-	masterUpdateCh := make(chan string)
+	peerOlav := tcp.Peer{
+		Id:     "Olav",
+		Floors: 12,
+		Color:  "red",
+	}
+
+	peerCh := make(chan tcp.Peer)
+	guttaneCh := make(chan map[string]tcp.Peer)
+
+	guttane := make(map[string]tcp.Peer)
+	guttane[peerLudvig.Id] = peerLudvig
+	guttane[peerJonathan.Id] = peerJonathan
+	guttane[peerOlav.Id] = peerOlav
+
+	//--------
+
+	//connectionsUpdateCh := make(chan map[string]net.Conn)
+	//connectionsCh := make(chan map[string]net.Conn)
+
+	//masterUpdateCh := make(chan string)
 
 	peerEnableTx := make(chan bool)
 	peerUpdateRx := make(chan peers.PeerUpdate)
@@ -53,28 +107,26 @@ func main() {
 	fmt.Printf("Dette er min ID: %v\n", id)
 
 	if isMaster {
-		go tcp.ReceiveConn(id, masterPort, connectionsUpdateCh)
-		go tcp.AddConnections(id, connectionsUpdateCh, peerUpdateRx, connectionsCh)
-		go tcp.SendAndReceive(connectionsCh)
+		/* go tcp.ReceiveConn(id, masterPort, connectionsUpdateCh)
+		go tcp.AddConnections(id, connectionsUpdateCh, peerUpdateRx, connectionsCh) */
+		// CONNECTIONS map
+		go tcp.ReceiverOther(masterPort, id, guttaneCh)
+		go PeerLytter(peerCh, guttaneCh)
+		//go tcp.SendAndReceive(connectionsCh, isMaster)
 
 	} else {
 		//go tcp.ReceiveConn(slavePort, connectionsUpdateCh)
-		go tcp.GetIdOfNewMaster(peerUpdateRx, masterUpdateCh)
-		go tcp.NotifyMaster(masterPort, id, masterUpdateCh)
-		// tcpConn, err := tcp.TransmitConn(masterPort, id)
-		// fmt.Printf("Her1\n")
+		//go tcp.GetIdOfNewMaster(peerUpdateRx, masterUpdateCh)
+		//go tcp.NotifyMaster(masterPort, id, masterUpdateCh)
+		tcpConn, _ := tcp.TransmitConn2(masterPort, id)
+		tcp.Transmiter(tcpConn, guttane)
+		fmt.Printf("TcpConn: %v\n", tcpConn)
+
 		// if err != nil {
 		// 	fmt.Printf("[error] Failed to Dial: %v\n", err)
 		// 	return
 		// }
-		// fmt.Printf("Dette er connen: %v\n", tcpConn)
 
-		//tcpConn.Write([]byte("ACK - Dette skriver jeg til Master\n"))
-
-		// for {
-		// 	fmt.Printf("Nå er jeg i en uendelig loop\n")
-		// 	time.Sleep(3 * time.Second)
-		// }
 	}
 	select {}
 }

@@ -38,6 +38,13 @@ type Elevator struct {
 	Queue []int
 }
 
+type Peer struct {
+	Id     string
+	Floors int
+	Color  string
+}
+
+
 /**
  * @var variables regarding the connections for the TCP.
  */
@@ -108,7 +115,10 @@ func Receive(port int, address string, data ...interface{}) {
 	buffer := make([]byte, 1024)
 	for {
 		conn, err := listener.Accept()
-
+		// connectionsHc <- conn
+		// go receiver2(conn, channels)
+		//
+		//
 		if err != nil {
 			fmt.Printf("[error] Failed to create connection with error: %v\n", err)
 			continue
@@ -204,68 +214,6 @@ func Transmit2pkt0(conn net.Conn, dataCh <-chan elevator.Elevator) {
 }
 
 func Receive2pkt0(conn net.Conn, data ...interface{}) {
-
-	channels := make(map[string]interface{}) // a map with called channels with each data's type, written as a string, as keys
-
-	for _, channel := range data {
-		if channel == nil || reflect.TypeOf(channel).Kind() != reflect.Chan {
-			panic("Arguments contains one or more non channel type\n")
-		}
-
-		channels[reflect.TypeOf(channel).Elem().Name()] = channel
-	}
-
-	var tj TaggedJson
-	buffer := make([]byte, 1024)
-	for {
-
-		select {}
-
-		length, err := conn.Read(buffer)
-
-		if err != nil {
-			fmt.Printf("[error] Failed to read from connection with error: %v\n", err)
-			continue
-		}
-
-		err = json.Unmarshal(buffer[0:length], &tj)
-
-		if err != nil {
-			fmt.Printf("[error] Failed to marshal JSON with error: %v", err)
-			continue
-		}
-
-		channel, ok := channels[tj.Type]
-
-		if !ok {
-			fmt.Printf("[warning] Recieved type we are not listening to: %v\n", tj.Type)
-			continue
-		}
-
-		value := reflect.New(reflect.TypeOf(channel).Elem())
-
-		err = json.Unmarshal(tj.JSON, value.Interface()) // lagrer dataen vi har fått fra transmitter. Vi lagrer dette i value
-
-		if err != nil {
-			fmt.Printf("[error] Failed to unmarshal data with error code: %v\n", err)
-			continue
-		}
-
-		// Actually send data to the respective channel
-		reflect.Select([]reflect.SelectCase{{
-			Dir:  reflect.SelectSend,
-			Chan: reflect.ValueOf(channel),
-			Send: reflect.Indirect(value),
-		}})
-
-		conn.Write([]byte("ACK"))
-
-		conn.Close()
-	}
-}
-
-// ----------------- [Endring av Recieve-funksjon] ---------------
-func Receive3pkt0(conn net.Conn, data ...interface{}) {
 
 	channels := make(map[string]interface{}) // a map with called channels with each data's type, written as a string, as keys
 
@@ -426,6 +374,7 @@ func AddConnections(id string, connsUpdateCh chan map[string]net.Conn, peerchan 
 			for i := 0; i < len(c.Lost); i++ {
 				for k := range conns {
 					if k == c.Lost[i] {
+						conns[k].Close()
 						delete(conns, k)
 					}
 				}
@@ -437,15 +386,21 @@ func AddConnections(id string, connsUpdateCh chan map[string]net.Conn, peerchan 
 	}
 }
 
-func SendAndReceive(connsCh chan map[string]net.Conn) {
+func SendAndReceive(connsCh chan map[string]net.Conn, isMaster bool) {
 	var conns map[string]net.Conn
 	for {
-		select {
-		case c := <-connsCh:
-			conns = c
-			//fmt.Println("Send and receive sin conn liste", c)
-			fmt.Println("Send and receive sin conn liste", conns)
-			fmt.Println()
+		if isMaster {
+
+			select {
+			case c := <-connsCh:
+				conns = c
+				//fmt.Println("Send and receive sin conn liste", c)
+				fmt.Println("Send and receive sin conn liste", conns)
+				fmt.Println()
+
+				//case c:= <-receivechan:
+
+			}
 		}
 	}
 }
@@ -472,6 +427,7 @@ func NotifyMaster(port string, id string, sendToMasterCh chan string) {
 			masterIp := peers.ExtractIpFromPeer(m)
 			fmt.Println("Master IP:", masterIp)
 			tcpConn, err := TransmitConn(port, id, masterIp)
+
 			//fmt.Printf("Her1\n")
 			if err != nil {
 				fmt.Printf("[error] Failed to Dial: %v\n", err)
@@ -511,7 +467,10 @@ func Transmiter(conn net.Conn, data interface{}) {
 }
 
 func Receiver(conn net.Conn, data ...interface{}) {
-
+	// her trenger vi et oppdatert map
+	// for
+	// for connection := range connections
+	// go reciever2(connection net.Conn, data)
 	channels := make(map[string]interface{}) // a map with called channels with each data's type, written as a string, as keys
 
 	for _, channel := range data {
@@ -569,3 +528,145 @@ func Receiver(conn net.Conn, data ...interface{}) {
 }
 
 //----------------------------------------------------------------------------
+
+
+
+
+//-----------------------------[Nå snakker vi]-----------------------
+
+func ReceiverOther(port string, id string /*connectionsCh chan map[string]net.Conn,*/, data ...interface{}) {
+	//masterIp := peers.ExtractIpFromPeer(id)
+	// Resolve address
+	addr, err := net.ResolveTCPAddr("tcp", "localhost"+":"+port)
+	if err != nil {
+		fmt.Println("Error resolving address:", err)
+		return
+	}
+	// Create listener
+	listener, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		fmt.Println("Error creating listener:", err)
+		return
+	}
+	//connections := make(map[string]net.Conn) // map of connections
+	channels := make(map[string]interface{}) // a map with called channels with each data's type, written as a string, as keys
+
+	for _, channel := range data {
+		if channel == nil || reflect.TypeOf(channel).Kind() != reflect.Chan {
+			panic("Arguments contains one or more non channel type\n")
+		}
+
+		channels[reflect.TypeOf(channel).Elem().Name()] = channel
+	}
+
+	if err != nil {
+		fmt.Printf("[error] Failed to create listener with error: %v\n", err)
+		return
+	}
+
+	var tj TaggedJson
+	buffer := make([]byte, 1024)
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			fmt.Printf("[error] Failed to create connection with error: %v\n", err)
+			continue
+		}
+		fmt.Println("Accepted connection on port: " + port)
+		// tanke: (?)
+		//connectionsHc <- conn
+		// go receiver2(conn, channels)
+		//
+		// this in new goroutine
+		go ReceiveHandler(conn, buffer, tj, channels)
+	}
+}
+
+func ReceiveHandler(conn net.Conn, buffer []byte, tj TaggedJson, channels map[string]interface{}) {
+	defer conn.Close()
+	for {
+
+		// [Her leser jeg slavens ID]
+		length, err := conn.Read(buffer)
+		if err != nil {
+			fmt.Printf("[error] Failed to read: %v\n", err)
+			break // this  makes the code break out of the for-loop if it fails to read the buffer (conn gone)
+		}
+
+		err = json.Unmarshal(buffer[0:length], &tj)
+
+		if err != nil {
+			fmt.Printf("[error] Failed to marshal JSON with error: %v", err)
+			continue
+		}
+
+		channel, ok := channels[tj.Type]
+
+		if !ok {
+			fmt.Printf("[warning] Recieved type we are not listening to: %v\n", tj.Type)
+			continue
+		}
+
+		value := reflect.New(reflect.TypeOf(channel).Elem())
+
+		err = json.Unmarshal(tj.JSON, value.Interface()) // lagrer dataen vi har fått fra transmitter. Vi lagrer dette i value
+
+		if err != nil {
+			fmt.Printf("[error] Failed to unmarshal data with error code: %v\n", err)
+			continue
+		}
+
+		// Actually send data to the respective channel
+		reflect.Select([]reflect.SelectCase{{
+			Dir:  reflect.SelectSend,
+			Chan: reflect.ValueOf(channel),
+			Send: reflect.Indirect(value),
+		}})
+	}
+	fmt.Println("Nå er denne tråden lukket")
+
+}
+
+
+func TransmitConn2(port string, id string) (net.Conn, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost"+":"+port) // dette er bare foreløpig. IP-som mates inn må være destinasjonen
+	if err != nil {
+		fmt.Println("Error resolving address:", err)
+		return nil, err
+	}
+	conn, err := net.Dial(CONN_TYPE, addr.String())
+	if err != nil {
+		fmt.Printf("[error] Failed to Dial: %v\n", err)
+		return nil, err
+	}
+	//conn.Write([]byte(id))
+	return conn, err
+}
+
+
+func Transmiter2(conn net.Conn, data interface{}) {
+
+	buffer, err := json.Marshal(data)
+	if err != nil {
+		fmt.Printf("[error] Failed to encode data with error: %v\n", err)
+		return
+	}
+
+	buffer, err = json.Marshal(TaggedJson{reflect.TypeOf(data).Name(), buffer})
+	if err != nil {
+		fmt.Printf("[error] Failed to make buffer with error:")
+	}
+
+	_, err = conn.Write(buffer)
+	if err != nil {
+		fmt.Printf("[error] Failed to write: %v\n", err)
+		//conn.Close() her?
+		return
+	}
+
+}
+
+
+//----------------------------------------------------------------------------
+
+
