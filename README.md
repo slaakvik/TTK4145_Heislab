@@ -9,7 +9,7 @@ Imperative shell functional core.
 - Master-slave:
 	+ Angående tap av cab calles ved restart: alle heisene kan initialiseres med fire cab calls, for å forsikre om at alle ordre blir tatt hånd om :-D.
 	+ Må lagge til en state i elevator structen som er "failure". Dersom heisen er obstructed så skal failure være true. master skal sjekke om heisen er i failure state før den sendes inn i cost function. Kun heiser som ikke er i failure state skal få nye hall requests. Altså skal master kun sende heisene som ikke er i failure inn i cost function.
- + Master kan sende hele mappet sitt med oversikten over alle heisene istedenfor å sende resultat fra cost funksjonen. Deretter kan hver slave selv finne frem til sin egen heis og tilhørende nye requests ut i fra id, og deretter sette sine hall calls lik hall callsene fra cost funksjonen. Dette gjør at alle heisene har mulighet til å ta over siden alle har oversikt over alle heisene. Vi kan likevel assigne designert backup for når master kobler fra, men alle skal ha mulighet til å ta over. 
+ 	+ Master kan sende hele mappet sitt med oversikten over alle heisene istedenfor å sende resultat fra cost funksjonen. Deretter kan hver slave selv finne frem til sin egen heis og tilhørende nye requests ut i fra id, og deretter sette sine hall calls lik hall callsene fra cost funksjonen. Dette gjør at alle heisene har mulighet til å ta over siden alle har oversikt over alle heisene. Vi kan likevel assigne designert backup for når master kobler fra, men alle skal ha mulighet til å ta over. 
 
 
 
