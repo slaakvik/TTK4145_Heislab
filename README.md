@@ -28,4 +28,10 @@ if id != "" {
 
 
 
+---- [Master-slave: 11/3] -----
+- Slik det er nå vil det muligens oppstå problemer, i.f.t heartbeat, hvis flere slaves sier de er master. Dette på grunn av den ekstra p.Master == "" i peers.Receiver-funksjonen
+
+
+
+
  
