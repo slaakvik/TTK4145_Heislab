@@ -237,3 +237,59 @@ for key := range allElevs { // Deleting key-value pair from allElevs map if it i
 	}
 ```
 
+
+_________________________________________________________________________________________
+11.03 - Timer funksjon
+_________________________________________________________________________________________
+```Go
+
+import "time"
+
+func main() {
+	timedOut := make(chan int)
+	obstructionChannel := make(chan bool)
+	doorTimerChannel := make(chan bool)
+
+	go timer(obstructionChannel, doorTimerChannel, timedOut)
+
+	// When door wants to close, check for signal at timedOut-channel. Also empty the channel, because it can have more than one in the queue.
+	if len(timedOut) > 1 {
+		for len(timedOut) > 1 {
+			<-timedOut
+		}
+	}
+	<-timedOut
+}
+
+func timer(obstructionChannel chan bool, doorTimerChannel chan bool, timedOut chan int) { // Kjører denne som goroutine
+	obstruction := false
+	resetDoorTimer := false
+	timer := time.NewTimer(0)
+
+	for {
+		if obstruction {
+			// if elevio.GetObstruction() {
+			timer.Reset(3 * time.Second)
+		}
+
+		if resetDoorTimer {
+			timer.Reset(3 * time.Second)
+			resetDoorTimer = false
+		}
+
+		select {
+		case a := <-obstructionChannel:
+			obstruction = a
+			if !obstruction {
+				timer.Reset(3 * time.Second)
+			}
+		case a := <-doorTimerChannel:
+			resetDoorTimer = a
+		case <-timer.C:
+			<-timedOut
+		default:
+		}
+	}
+}
+
+```
