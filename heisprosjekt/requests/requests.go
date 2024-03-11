@@ -14,21 +14,24 @@ type DirnBehaviourPair struct {
 	Behaviour elevator.ElevatorBehaviour
 }
 
-func OnRequest(elev elevator.Elevator, HallRequests [][2]bool) elevator.Elevator {
-	switch elev.Behaviour {
-	case elevator.EB_DoorOpen:
-		elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
-		fmt.Println("Door open")
-	case elevator.EB_Moving:
-		elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
-
-	case elevator.EB_Idle:
-		elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
+func OnRequest(elev elevator.Elevator) elevator.Elevator {
+	// switch elev.Behaviour {
+	// case elevator.EB_DoorOpen:
+	// 	//elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
+	// 	fmt.Println("on request while Door open")
+	// case elevator.EB_Moving:
+	// 	//elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
+	// 	fmt.Println("on request while moving")
+	// case elevator.EB_Idle:
+		//elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
+	if elev.Behaviour == elevator.EB_Idle {
+		fmt.Println("on request while idle")
 		pair := Requests_chooseDirection(elev)
 		elev.Dirn = pair.Dirn
 		elevio.SetMotorDirection(elev.Dirn)
 		elev.Behaviour = pair.Behaviour
 	}
+	// }
 
 	elevator.SetAllLights(elev)
 	return elev

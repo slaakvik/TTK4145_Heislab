@@ -103,23 +103,35 @@ func MergeHallAndCabCall(cabs []bool, halls [][2]bool) [elevio.NumFloors][elevio
 
 	for f := 0; f < elevio.NumFloors; f++ {
 		for b := 0; b < (elevio.NumButtons - 1); b++ {
-			requests[f][b] = halls[f][b]
+			requests[f][b] =  halls[f][b]
 		}
 		requests[f][elevio.NumButtons-1] = cabs[f]
 	}
 	return requests
 }
 
-func MergeHallAndRequests(requests [elevio.NumFloors][elevio.NumButtons]bool, halls [][2]bool) [elevio.NumFloors][elevio.NumButtons]bool {
-	for f := 0; f < elevio.NumFloors; f++ {
-		for b := 0; b < elevio.NumButtons; b++ {
-			if b < 2 {
-				requests[f][b] = requests[f][b] || halls[f][b]
-			}
-		}
-	}
-	return requests
-}
+// func MergeHallAndRequests(requests [elevio.NumFloors][elevio.NumButtons]bool, halls [][2]bool) [elevio.NumFloors][elevio.NumButtons]bool {
+// 	for f := 0; f < elevio.NumFloors; f++ {
+// 		for b := 0; b < elevio.NumButtons; b++ {
+// 			if b < 2 {
+// 				requests[f][b] = requests[f][b] || halls[f][b]
+// 			}
+// 		}
+// 	}
+// 	return requests
+// }
+
+// // Velger å kun direkte sette lik hall calls istedenfor å or'e requests og hall calls.
+// func MergeHallAndRequests(requests [elevio.NumFloors][elevio.NumButtons]bool, halls [][2]bool) [elevio.NumFloors][elevio.NumButtons]bool {
+// 	for f := 0; f < elevio.NumFloors; f++ {
+// 		for b := 0; b < elevio.NumButtons; b++ {
+// 			if b < 2 {
+// 				requests[f][b] = halls[f][b]
+// 			}
+// 		}
+// 	}
+// 	return requests
+// }
 
 func EB_ToString(elevBehaviour ElevatorBehaviour) string {
 	switch elevBehaviour {

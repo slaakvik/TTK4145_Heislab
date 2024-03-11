@@ -12,19 +12,16 @@ import (
 
 // Finite state machine
 
-func ButtonsAndRequests(elevatorID string, isMaster bool, elevUpdateBtnAndOrdersCh chan<- elevator.Elevator, elevUpdateRealtimeCh <-chan elevator.Elevator, drv_buttons chan elevio.ButtonEvent, ElevatorTx chan elevator.Elevator, CostTx chan map[string][][2]bool, ElevatorRx chan elevator.Elevator, CostRx chan map[string][][2]bool) {
+func ButtonsAndRequests(elevatorID string, isMaster bool /*elevUpdateBtnAndOrdersCh chan<- elevator.Elevator, */, elevUpdateRealtimeCh <-chan elevator.Elevator, drv_buttons chan elevio.ButtonEvent, ElevatorTx chan elevator.Elevator, mapOfElevsTx chan map[string]elevator.Elevator, ElevatorRx chan elevator.Elevator, mapOfElevsRx chan map[string]elevator.Elevator, newOrderCh chan<- map[string]elevator.Elevator) {
 	elev := elevator.InitElev()
 	elev.ElevID = elevatorID
-	elevUpdateBtnAndOrdersCh <- elev
 
-	if elevio.GetFloor() == -1 {
-		elev = elevator.OnInitBetweenFloors(elev)
-		elevUpdateBtnAndOrdersCh <- elev
-		elevator.Elevator_print(elev)
-	}
+	mapOfElevs := make(map[string]elevator.Elevator)
+	mapOfElevs[elev.ElevID] = elev
+
+	//newOrderCh <- mapOfElevs
 
 	//dersom man er master skal man sette opp en cost func map og legge til seg selv:
-	mapOfElevs := make(map[string]elevator.Elevator)
 	fmt.Println(mapOfElevs)
 	fmt.Println("______________")
 
@@ -38,89 +35,98 @@ func ButtonsAndRequests(elevatorID string, isMaster bool, elevUpdateBtnAndOrders
 			btn_type := a.Button
 			fmt.Printf("Button: %+v\n", a)
 
-			if elev.Behaviour != elevator.EB_Moving && requests.Requests_shouldClearImmediately(elev, btn_floor, btn_type) {
+			// if elev.Behaviour != elevator.EB_Moving && requests.Requests_shouldClearImmediately(elev, btn_floor, btn_type) {
 
-				elev.Behaviour = elevator.EB_DoorOpen
-				elevUpdateBtnAndOrdersCh <- elev
+			// 	elev.Behaviour = elevator.EB_DoorOpen
+			// 	elevUpdateBtnAndOrdersCh <- elev
+
+			// 	mapOfElevs[elev.ElevID] = elev
+			// 	sendElevToMaster(isMaster, ElevatorTx, elev)
+			// 	elevator.SetAllLights(elev)
+			// 	go func() {
+
+			// 		quit := make(chan int)
+			// 		go timer.DoorTimer(quit)
+			// 		<-quit
+			// 	}()
+			// 	elev = timer.OnDoorTimeout(elev)
+			// 	elevUpdateBtnAndOrdersCh <- elev
+			// 	elevio.SetMotorDirection(elev.Dirn)
+
+			// } else {
+			if isMaster {
+				elev.Requests[btn_floor][btn_type] = true
+
+				// elevUpdateBtnAndOrdersCh <- elev //Trenger vi denne?
 
 				mapOfElevs[elev.ElevID] = elev
-				sendElevToMaster(isMaster, ElevatorTx, elev)
-				elevator.SetAllLights(elev)
-				go func() {
 
-					quit := make(chan int)
-					go timer.DoorTimer(quit)
-					<-quit
-				}()
-				elev = timer.OnDoorTimeout(elev)
-				elevUpdateBtnAndOrdersCh <- elev
-				elevio.SetMotorDirection(elev.Dirn)
+				// costFunctionResults := cost_fns.RunCostFunc(mapOfElevs)
+
+				// CostTx <- costFunctionResults
+				mapOfElevs := cost_fns.RunCostFunc(mapOfElevs)
+				mapOfElevsTx <- mapOfElevs
+				newOrderCh <- mapOfElevs
+
+				// MyNewHRs := costFunctionResults[elev.ElevID]
+				// elev = requests.OnRequest(elev, MyNewHRs)
+				// elevUpdateBtnAndOrdersCh <- elev
+				// mapOfElevs[elev.ElevID] = elev
 
 			} else {
-				if isMaster {
-					if btn_type == 2 {
-						fmt.Println("cab callll")
-						elev.Requests[btn_floor][btn_type] = true
-						fmt.Println("elev: ")
-						elevUpdateBtnAndOrdersCh <- elev
-						fmt.Println("Den kommer ikke hit")
-						mapOfElevs[elev.ElevID] = elev
-						fmt.Println(mapOfElevs)
-					} else {
-						temp_elev := elev
-						temp_elev.Requests[btn_floor][btn_type] = true
-						mapOfElevs[elev.ElevID] = temp_elev
-					}
-					costFunctionResults := cost_fns.RunCostFunc(mapOfElevs)
-					CostTx <- costFunctionResults
 
-					MyNewHRs := costFunctionResults[elev.ElevID]
-					elev = requests.OnRequest(elev, MyNewHRs)
-					elevUpdateBtnAndOrdersCh <- elev
-					mapOfElevs[elev.ElevID] = elev
+				elev.Requests[btn_floor][btn_type] = true
+				ElevatorTx <- elev
 
-				} else {
-					if btn_type == 2 {
-						elev.Requests[btn_floor][btn_type] = true
-						ElevatorTx <- elev
-					} else {
-						temp_elev := elev
-						temp_elev.Requests[btn_floor][btn_type] = true
-						ElevatorTx <- temp_elev
-					}
-				}
 			}
+			// }
 		case a := <-ElevatorRx:
 			if isMaster {
 				mapOfElevs[a.ElevID] = a
-				costFunctionResults := cost_fns.RunCostFunc(mapOfElevs)
-				CostTx <- costFunctionResults
-				MyNewHRs := costFunctionResults[elev.ElevID]
-				elev = requests.OnRequest(elev, MyNewHRs)
-				elevUpdateBtnAndOrdersCh <- elev
-				mapOfElevs[elev.ElevID] = elev
+				mapOfElevs := cost_fns.RunCostFunc(mapOfElevs)
+				mapOfElevsTx <- mapOfElevs
+				newOrderCh <- mapOfElevs
+				// MyNewHRs := costFunctionResults[elev.ElevID]
+				// elev = requests.OnRequest(elev, MyNewHRs)
+				// elevUpdateBtnAndOrdersCh <- elev
+				// mapOfElevs[elev.ElevID] = elev
 			}
-		case a := <-CostRx:
+		case a := <-mapOfElevsRx:
 			if !isMaster {
-				MyNewHRs := a[elev.ElevID]
-				elev = requests.OnRequest(elev, MyNewHRs)
-				elevUpdateBtnAndOrdersCh <- elev
-				mapOfElevs[elev.ElevID] = elev
-				sendElevToMaster(isMaster, ElevatorTx, elev)
+				mapOfElevs = a
+				newOrderCh <- mapOfElevs
+				// MyNewHRs := a[elev.ElevID]
+				// elev = requests.OnRequest(elev, MyNewHRs)
+				// elevUpdateBtnAndOrdersCh <- elev
+				// mapOfElevs[elev.ElevID] = elev
+				// sendElevToMaster(isMaster, ElevatorTx, elev)
 			}
 
 		}
 	}
 }
 
-func FloorObstrStop(isMaster bool, elevUpdateBtnAndOrdersCh <-chan elevator.Elevator, elevUpdateRealtimeCh chan<- elevator.Elevator, drv_floors chan int, drv_stop chan bool, drv_obstr chan bool, ElevatorTx chan<- elevator.Elevator) {
+func FloorObstrStop(isMaster bool, elevatorId string /* elevUpdateBtnAndOrdersCh <-chan elevator.Elevator,*/, elevUpdateRealtimeCh chan<- elevator.Elevator, drv_floors chan int, drv_stop chan bool, drv_obstr chan bool, ElevatorTx chan<- elevator.Elevator, newOrderCh <-chan map[string]elevator.Elevator) {
 	elev := elevator.InitElev()
+	elev.ElevID = elevatorId
+
+	if elevio.GetFloor() == -1 {
+		elev = elevator.OnInitBetweenFloors(elev)
+		elevator.Elevator_print(elev)
+	}
 
 	for {
 		select {
-		case a := <-elevUpdateBtnAndOrdersCh:
-			elev = a
-			fmt.Println("Elev floor at btn press: ", elev.Floor)
+		// case a := <-elevUpdateBtnAndOrdersCh:
+		// 	elev = a
+		// 	fmt.Println("Elev floor at btn press: ", elev.Floor)
+		case a := <-newOrderCh:
+			elev = a[elev.ElevID]
+			// elevUpdateRealtimeCh <- elev
+			// sendElevToMaster(isMaster, ElevatorTx, elev) //(trenger vi denne?)
+			elev = requests.OnRequest(elev)
+			elevUpdateRealtimeCh <- elev
+
 		case a := <-drv_floors:
 			fmt.Printf("Floor: %+v\n", a)
 			elev.Floor = a

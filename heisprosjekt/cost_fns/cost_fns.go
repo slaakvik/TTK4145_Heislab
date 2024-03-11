@@ -43,15 +43,22 @@ type HRAInput struct {
 //		}
 //		return input
 //	}
-func RunCostFunc(elevMap map[string]elevator.Elevator) map[string][][2]bool {
-	for k, v := range elevMap {
+func RunCostFunc(elevMap map[string]elevator.Elevator) map[string]elevator.Elevator {
+	commonHallCalls := orHallCalls(elevMap)
+	tempElevMap := elevMap
+	for k, v := range tempElevMap {
 		if v.Failure {
-			delete(elevMap, k)
+			delete(tempElevMap, k)
 		}
 	}
 
-	input := inputToCost(elevMap)
-	return getCostOutput(input)
+	input := inputToCost(commonHallCalls, tempElevMap)
+	newHRAs := getCostOutput(input)
+
+	for k := range newHRAs {
+		elevMap[k] = mergeHallAndRequests(elevMap[k], newHRAs[k])
+	}
+	return elevMap
 }
 
 func elevToHRAElevState(elev elevator.Elevator) HRAElevState {
@@ -73,8 +80,8 @@ func orHallCalls(allElevs map[string]elevator.Elevator) [][2]bool {
 	}
 	return result
 }
-func inputToCost(elevMap map[string](elevator.Elevator)) HRAInput {
-	commonHallCalls := orHallCalls(elevMap)
+func inputToCost(commonHallCalls [][2]bool, elevMap map[string](elevator.Elevator)) HRAInput {
+	// commonHallCalls := orHallCalls(elevMap)
 
 	stateMap := map[string]HRAElevState{}
 	for k, v := range elevMap {
@@ -127,6 +134,18 @@ func getCostOutput(input HRAInput) map[string][][2]bool {
 	hra_funcs(input, output, hraExecutable)
 
 	return *output
+}
+
+// Velger å kun direkte sette lik hall calls istedenfor å or'e requests og hall calls.
+func mergeHallAndRequests(elev elevator.Elevator, halls [][2]bool) elevator.Elevator {
+	for f := 0; f < elevio.NumFloors; f++ {
+		for b := 0; b < elevio.NumButtons-1; b++ {
+			// if b < 2 {
+			elev.Requests[f][b] = halls[f][b]
+			// }
+		}
+	}
+	return elev
 }
 
 // func main() {
