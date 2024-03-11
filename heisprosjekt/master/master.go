@@ -4,6 +4,7 @@ import (
 	"Heis/network/peers"
 	"fmt"
 	"strconv"
+	"Heis/network/tcp"
 )
 
 /*
@@ -57,14 +58,7 @@ func ChooseMaster(masterIdIndex int, p peers.PeerUpdate) string {
 	return false
 } */
 
-/**
- * @func ChechIfMasterIsEmpty checks if the masterID is empty. Returns true if it is.
- *
- */
-/* func ChechIfMasterIsEmpty(masterID string) bool {
-	return masterID == ""
-}
-*/
+
 /**
  * @func PrintMaster printes the master.
  *
@@ -84,5 +78,13 @@ func CheckIfYouAreMaster(masterProcessId string, processId int) bool {
 		return true
 	} else {
 		return false
+	}
+}
+
+
+func GetMaster(port string, masterCh chan string) {
+	for {
+		m := <-masterCh
+		tcp.TransmitConn(port, m)
 	}
 }

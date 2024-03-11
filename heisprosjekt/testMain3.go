@@ -1,32 +1,18 @@
 package main
 
 import (
-	"Heis/network/localip"
+	"Heis/master"
 	"Heis/network/peers"
 	"Heis/network/tcp"
 	"flag"
 	"fmt"
-	//"net"
-	"os"
 )
 
-var masterPort = "8039"
+const (
+	MasterPort = "8039"
+)
 
-//var slavePort = "8074"
-
-// this was just to make main smaller. Just temporary
-func CheckId() string {
-	id := ""
-	localIP, err := localip.LocalIP()
-	if err != nil {
-		fmt.Println(err)
-		localIP = "DISCONNECTED"
-	}
-	id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
-	return id
-}
-
-func PeerLytter(peerCh <-chan tcp.Peer, guttaneCh <-chan map[string]tcp.Peer) { //burde vel være read only kanal? siden den bare skal motta på
+func PeerLytter(peerCh <-chan tcp.Peer, guttaneCh <-chan map[string]tcp.Peer, p chan peers.PeerUpdate) { //burde vel være read only kanal? siden den bare skal motta på
 	//connections := make(map[string]net.Conn)
 	for {
 		select {
@@ -46,6 +32,9 @@ func PeerLytter(peerCh <-chan tcp.Peer, guttaneCh <-chan map[string]tcp.Peer) { 
 				fmt.Printf("Her er structet: %v\n", v)
 				println()
 			}
+		case a := <-p:
+			peers.PrintUpdatedPeers(a)
+			println()
 
 		}
 	}
@@ -55,7 +44,7 @@ func PeerLytter(peerCh <-chan tcp.Peer, guttaneCh <-chan map[string]tcp.Peer) { 
 func main() {
 	//kalosj! 500
 
-	id := CheckId() //set the id to default if id is not provided at launch
+	id := peers.CheckId() //set the id to default if id is not provided at launch
 	// lager et map med ulike Peers
 
 	peerLudvig := tcp.Peer{
@@ -76,7 +65,7 @@ func main() {
 		Color:  "red",
 	}
 
-	peerCh := make(chan tcp.Peer)
+	//peerCh := make(chan tcp.Peer)
 	guttaneCh := make(chan map[string]tcp.Peer)
 
 	guttane := make(map[string]tcp.Peer)
@@ -90,13 +79,6 @@ func main() {
 	//connectionsCh := make(chan map[string]net.Conn)
 
 	//masterUpdateCh := make(chan string)
-
-	peerEnableTx := make(chan bool)
-	peerUpdateRx := make(chan peers.PeerUpdate)
-
-	go peers.Transmitter(15678, id, peerEnableTx)
-	go peers.Receiver(15678, peerUpdateRx)
-
 	var (
 		isMaster bool
 	)
@@ -104,24 +86,36 @@ func main() {
 	flag.BoolVar(&isMaster, "isMaster", false, "")
 	flag.Parse()
 
+	peerEnableTx := make(chan bool)
+	peerUpdateRx := make(chan peers.PeerUpdate)
+	masterCh := make(chan string)
+
+	//fmt.Printf("Dette er isMaster: %v\n", isMaster)
+	go peers.Transmitter(15679, id, &isMaster, peerEnableTx)
+	go peers.Receiver(15679, peerUpdateRx)
+	go peers.GetPeerUpdate(peerUpdateRx, masterCh)
+
 	fmt.Printf("Dette er min ID: %v\n", id)
 
+	
 	if isMaster {
+		go tcp.Receive(MasterPort, id, guttaneCh)
 		/* go tcp.ReceiveConn(id, masterPort, connectionsUpdateCh)
 		go tcp.AddConnections(id, connectionsUpdateCh, peerUpdateRx, connectionsCh) */
 		// CONNECTIONS map
-		go tcp.ReceiverOther(masterPort, id, guttaneCh)
-		go PeerLytter(peerCh, guttaneCh)
+		//go tcp.Receive(MasterPort, id, guttaneCh)
+		//go PeerLytter(peerCh, guttaneCh, peerUpdateRx)
 		//go tcp.SendAndReceive(connectionsCh, isMaster)
 
 	} else {
+		go master.GetMaster(MasterPort, masterCh)
+		//go PeerLytter(peerCh, guttaneCh, peerUpdateRx)
 		//go tcp.ReceiveConn(slavePort, connectionsUpdateCh)
 		//go tcp.GetIdOfNewMaster(peerUpdateRx, masterUpdateCh)
 		//go tcp.NotifyMaster(masterPort, id, masterUpdateCh)
-		tcpConn, _ := tcp.TransmitConn2(masterPort, id)
-		tcp.Transmiter(tcpConn, guttane)
-		fmt.Printf("TcpConn: %v\n", tcpConn)
-
+		//tcpConn, _ := tcp.TransmitConn2(masterPort, id)
+		//tcp.Transmiter(tcpConn, guttane)
+		//fmt.Printf("TcpConn: %v\n", tcpConn)
 		// if err != nil {
 		// 	fmt.Printf("[error] Failed to Dial: %v\n", err)
 		// 	return
