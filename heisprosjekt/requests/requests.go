@@ -23,7 +23,7 @@ func OnRequest(elev elevator.Elevator) elevator.Elevator {
 	// 	//elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
 	// 	fmt.Println("on request while moving")
 	// case elevator.EB_Idle:
-		//elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
+	//elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
 	if elev.Behaviour == elevator.EB_Idle {
 		fmt.Println("on request while idle")
 		pair := Requests_chooseDirection(elev)

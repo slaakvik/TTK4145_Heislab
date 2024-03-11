@@ -7,7 +7,6 @@ import (
 	"Heis/requests"
 	"Heis/timer"
 	"fmt"
-	"time"
 )
 
 // Finite state machine
@@ -38,9 +37,11 @@ func ButtonsAndRequests(elevatorID string, isMaster bool /*elevUpdateBtnAndOrder
 			// if elev.Behaviour != elevator.EB_Moving && requests.Requests_shouldClearImmediately(elev, btn_floor, btn_type) {
 
 			// 	elev.Behaviour = elevator.EB_DoorOpen
-			// 	elevUpdateBtnAndOrdersCh <- elev
-
+			// 	// elevUpdateBtnAndOrdersCh <- elev
 			// 	mapOfElevs[elev.ElevID] = elev
+			// 	mapOfElevsTx <- mapOfElevs
+
+			// 	// mapOfElevs[elev.ElevID] = elev
 			// 	sendElevToMaster(isMaster, ElevatorTx, elev)
 			// 	elevator.SetAllLights(elev)
 			// 	go func() {
@@ -50,7 +51,9 @@ func ButtonsAndRequests(elevatorID string, isMaster bool /*elevUpdateBtnAndOrder
 			// 		<-quit
 			// 	}()
 			// 	elev = timer.OnDoorTimeout(elev)
-			// 	elevUpdateBtnAndOrdersCh <- elev
+			// 	// elevUpdateBtnAndOrdersCh <- elev
+			// 	mapOfElevs[elev.ElevID] = elev
+			// 	mapOfElevsTx <- mapOfElevs
 			// 	elevio.SetMotorDirection(elev.Dirn)
 
 			// } else {
@@ -106,12 +109,13 @@ func ButtonsAndRequests(elevatorID string, isMaster bool /*elevUpdateBtnAndOrder
 	}
 }
 
-func FloorObstrStop(isMaster bool, elevatorId string /* elevUpdateBtnAndOrdersCh <-chan elevator.Elevator,*/, elevUpdateRealtimeCh chan<- elevator.Elevator, drv_floors chan int, drv_stop chan bool, drv_obstr chan bool, ElevatorTx chan<- elevator.Elevator, newOrderCh <-chan map[string]elevator.Elevator) {
+func FloorObstrStop(isMaster bool, elevatorId string /* elevUpdateBtnAndOrdersCh <-chan elevator.Elevator,*/, elevUpdateRealtimeCh chan<- elevator.Elevator, drv_floors chan int, drv_stop chan bool, drv_obstr chan bool, ElevatorTx chan<- elevator.Elevator, newOrderCh <-chan map[string]elevator.Elevator, doorTimerCh chan bool, timedOut chan int) {
 	elev := elevator.InitElev()
 	elev.ElevID = elevatorId
 
 	if elevio.GetFloor() == -1 {
 		elev = elevator.OnInitBetweenFloors(elev)
+		elevUpdateRealtimeCh <- elev
 		elevator.Elevator_print(elev)
 	}
 
@@ -122,10 +126,12 @@ func FloorObstrStop(isMaster bool, elevatorId string /* elevUpdateBtnAndOrdersCh
 		// 	fmt.Println("Elev floor at btn press: ", elev.Floor)
 		case a := <-newOrderCh:
 			elev = a[elev.ElevID]
-			// elevUpdateRealtimeCh <- elev
-			// sendElevToMaster(isMaster, ElevatorTx, elev) //(trenger vi denne?)
+
+			elevUpdateRealtimeCh <- elev
+			sendElevToMaster(isMaster, ElevatorTx, elev) //(trenger vi denne?)
 			elev = requests.OnRequest(elev)
 			elevUpdateRealtimeCh <- elev
+			sendElevToMaster(isMaster, ElevatorTx, elev)
 
 		case a := <-drv_floors:
 			fmt.Printf("Floor: %+v\n", a)
@@ -135,40 +141,83 @@ func FloorObstrStop(isMaster bool, elevatorId string /* elevUpdateBtnAndOrdersCh
 			sendElevToMaster(isMaster, ElevatorTx, elev)
 			switch elev.Behaviour {
 			case elevator.EB_Moving:
-				go func() {
-					if requests.Requests_shouldStop(elev) {
-						elevio.SetMotorDirection(elevio.MD_Stop)
-						elev.Behaviour = elevator.EB_DoorOpen
-						elevUpdateRealtimeCh <- elev
-						sendElevToMaster(isMaster, ElevatorTx, elev)
-						elevator.SetAllLights(elev)
-						// quit := make(chan int)
-						// go timer.DoorTimer(quit)
-						// <-quit
-						time.Sleep(3 * time.Second)
-						elev = timer.OnDoorTimeout(elev)
-						elevUpdateRealtimeCh <- elev
-						elevio.SetMotorDirection(elev.Dirn)
-						sendElevToMaster(isMaster, ElevatorTx, elev)
-						fmt.Println("Managed to send floor update")
-					}
-				}()
+				if requests.Requests_shouldStop(elev) {
+					elevio.SetMotorDirection(elevio.MD_Stop)
+					elev.Behaviour = elevator.EB_DoorOpen
+					elevUpdateRealtimeCh <- elev
+					sendElevToMaster(isMaster, ElevatorTx, elev)
+					elevator.SetAllLights(elev)
+					doorTimerCh <- true
+					// quit := make(chan int)
+					// go timer.DoorTimer(quit)
+					// <-quit
+					// time.Sleep(3 * time.Second)
+					// elev = timer.OnDoorTimeout(elev)
+					// elevUpdateRealtimeCh <- elev
+					// elevio.SetMotorDirection(elev.Dirn)
+					// sendElevToMaster(isMaster, ElevatorTx, elev)
+					// fmt.Println("Managed to send floor update")
+				}
+
 			default:
 
 			}
-		case a := <-drv_stop:
-			fmt.Printf("Stop button: %+v\n", a)
-			stop_functionality(a, elev)
+		// case a := <-drv_stop:
+		// 	fmt.Printf("Stop button: %+v\n", a)
+		// 	stop_functionality(a, elev)
 
-		case a := <-drv_obstr:
-			fmt.Printf("Obstruction %+v\n", a)
-			elev = obstruction_functionality(a, elev)
+		// case a := <-drv_obstr:
+		// 	fmt.Printf("Obstruction %+v\n", a)
+		// 	elev = obstruction_functionality(a, elev)
+		// 	elevUpdateRealtimeCh <- elev
+		// 	sendElevToMaster(isMaster, ElevatorTx, elev)
+
+		case <-timedOut:
+			fmt.Println("gikk inn i timedout")
+			elev = timer.OnDoorTimeout(elev, doorTimerCh)
+			fmt.Println("gikk inn i timedout")
 			elevUpdateRealtimeCh <- elev
+
 			sendElevToMaster(isMaster, ElevatorTx, elev)
+			fmt.Println("Managed to send floor update")
 
 		}
 	}
 
+}
+
+func sendElevToMaster(isMaster bool, updateElev chan<- elevator.Elevator, elev elevator.Elevator) {
+	if !isMaster {
+		updateElev <- elev
+	}
+}
+
+// etterhvert: fiks sånn at master blir klar over at heisen er obstructed (Må ha en "failure state" i elevator structet)
+func obstruction_functionality(obstruct bool, elev elevator.Elevator) elevator.Elevator {
+	if obstruct {
+		if elevio.GetFloor() != -1 {
+			elevio.SetMotorDirection(elevio.MD_Stop)
+			elevio.SetDoorOpenLamp(true)
+			elev.Failure = true
+		}
+
+	} else {
+		// elevio.SetMotorDirection(elev.Dirn)
+		elev = requests.OnRequest(elev)
+		// elevator.SetAllLights(elev)
+		elev.Failure = false
+	}
+	return elev
+}
+
+func stop_functionality(stop bool, elev elevator.Elevator) {
+	if stop {
+		elevio.SetMotorDirection(elevio.MD_Stop)
+		elevio.SetStopLamp(true)
+	} else {
+		elevio.SetMotorDirection(elev.Dirn)
+		elevio.SetStopLamp(false)
+	}
 }
 
 /*func FSM(buttons chan elevio.ButtonEvent, floors chan int, stop chan bool, obstr chan bool, elevatorID string, isMaster bool, sendElev chan elevator.Elevator, updatedCostTx chan map[string][][2]bool, masterNewOrder chan map[string][][2]bool, receiveElev chan elevator.Elevator, updatedCostRx chan map[string][][2]bool) {
@@ -332,41 +381,9 @@ func FloorObstrStop(isMaster bool, elevatorId string /* elevUpdateBtnAndOrdersCh
 	}
 }
 */
+
 // Timer goroutine
 // Kanskje legge denn inn i en egen go routine slik at vi fortsatt kan ta ordre?.
-
-func sendElevToMaster(isMaster bool, updateElev chan<- elevator.Elevator, elev elevator.Elevator) {
-	if !isMaster {
-		updateElev <- elev
-	}
-}
-
-// etterhvert: fiks sånn at master blir klar over at heisen er obstructed (Må ha en "failure state" i elevator structet)
-func obstruction_functionality(obstruct bool, elev elevator.Elevator) elevator.Elevator {
-	if obstruct {
-		elevio.SetMotorDirection(elevio.MD_Stop)
-		if elevio.GetFloor() != -1 {
-			elevio.SetDoorOpenLamp(true)
-		}
-		elev.Failure = true
-
-	} else {
-		elevio.SetMotorDirection(elev.Dirn)
-		elevator.SetAllLights(elev)
-		elev.Failure = false
-	}
-	return elev
-}
-
-func stop_functionality(stop bool, elev elevator.Elevator) {
-	if stop {
-		elevio.SetMotorDirection(elevio.MD_Stop)
-		elevio.SetStopLamp(true)
-	} else {
-		elevio.SetMotorDirection(elev.Dirn)
-		elevio.SetStopLamp(false)
-	}
-}
 
 // func onFloorArrival(elev *elevator.Elevator, newFloor int) { //elevptr
 // 	//printf("\n\n%s(%d)\n", __FUNCTION__, newFloor);

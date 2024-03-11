@@ -4,6 +4,7 @@ import (
 	//"Heis/cost_fns"
 	"Heis/driver-go/elevio"
 	"Heis/elevator"
+	"Heis/timer"
 
 	// "Heis/elevator"
 	"Heis/fsm"
@@ -36,6 +37,9 @@ func main() {
 	// elevUpdateBtnAndOrdersCh := make(chan elevator.Elevator)
 	newOrderCh := make(chan map[string]elevator.Elevator)
 	elevUpdateRealtimeCh := make(chan elevator.Elevator)
+	doorTimerCh := make(chan bool)
+	timedOut := make(chan int)
+
 	drv_buttons := make(chan elevio.ButtonEvent)
 	drv_floors := make(chan int)
 	drv_obstr := make(chan bool)
@@ -80,10 +84,11 @@ func main() {
 	// 	elevator.Elevator_print(elev)
 	// }
 	go fsm.ButtonsAndRequests(eleviId, isMaster, elevUpdateRealtimeCh, drv_buttons, ElevatorTx, mapOfElevsTx, ElevatorRx, mapOfElevsRx, newOrderCh)
-	go fsm.FloorObstrStop(isMaster, eleviId, elevUpdateRealtimeCh, drv_floors, drv_stop, drv_obstr, ElevatorTx, newOrderCh)
+	go fsm.FloorObstrStop(isMaster, eleviId, elevUpdateRealtimeCh, drv_floors, drv_stop, drv_obstr, ElevatorTx, newOrderCh, doorTimerCh, timedOut)
 
 	//go fsm.FSM(drv_buttons, drv_floors, drv_stop, drv_obstr, eleviId, isMaster, ElevatorTx, CostTx, masterOrders, ElevatorRx, CostRx)
 	go netfuncs.Network_FSM(peerUpdateCh)
+	go timer.Timer(doorTimerCh, timedOut)
 	select {}
 }
 
