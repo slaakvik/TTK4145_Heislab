@@ -91,7 +91,7 @@ func main() {
 	masterCh := make(chan string)
 
 	//fmt.Printf("Dette er isMaster: %v\n", isMaster)
-	go peers.Transmitter(15679, id, isMaster, peerEnableTx)
+	go peers.Transmitter(15679, id, &isMaster, peerEnableTx)
 	go peers.Receiver(15679, peerUpdateRx)
 	go peers.GetPeerUpdate(peerUpdateRx, masterCh)
 

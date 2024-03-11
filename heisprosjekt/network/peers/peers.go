@@ -22,7 +22,7 @@ type PeerUpdate struct {
 const interval = 15 * time.Millisecond
 const timeout = 500 * time.Millisecond
 
-func Transmitter(port int, id string, isMaster bool, transmitEnable <-chan bool) {
+func Transmitter(port int, id string, isMaster *bool, transmitEnable <-chan bool) {
 
 	conn := conn.DialBroadcastUDP(port)
 	addr, _ := net.ResolveUDPAddr("udp4", fmt.Sprintf("255.255.255.255:%d", port))
@@ -34,7 +34,7 @@ func Transmitter(port int, id string, isMaster bool, transmitEnable <-chan bool)
 		case <-time.After(interval):
 		}
 		if enable {
-			if isMaster && len(id) > 0 && id[0] != 'M' {
+			if *isMaster && len(id) > 0 && id[0] != 'M' {
 				id = "M" + id[1:]
 			}
 		}
@@ -55,16 +55,11 @@ func Receiver(port int, peerUpdateCh chan<- PeerUpdate) {
 
 		conn.SetReadDeadline(time.Now().Add(interval))
 		n, _, _ := conn.ReadFrom(buf[0:])
+		fmt.Println("Jeg fikk noe")
 		id := string(buf[:n])
-
-		// Check if the id is the master and set MasterId accordingly
-		if id != "" {
-			if (id[0] == 'M') && (p.Master == "") {
-				p.Master = id
-				updated = true //i am unsure if this is going to be problems if it is more than one master on the network
-			}
-		}
-
+		fmt.Printf("Her er IDen: %s\n", id)
+		
+		fmt.Println("Før lastseen")
 		// Adding new connection
 		p.New = ""
 		if id != "" {
@@ -76,6 +71,7 @@ func Receiver(port int, peerUpdateCh chan<- PeerUpdate) {
 			lastSeen[id] = time.Now()
 
 		}
+		fmt.Println("Etter lastseen")
 
 		// Removing dead connection
 		p.Lost = make([]string, 0)
@@ -84,6 +80,13 @@ func Receiver(port int, peerUpdateCh chan<- PeerUpdate) {
 				updated = true
 				p.Lost = append(p.Lost, k)
 				delete(lastSeen, k)
+			}
+		}
+		// Check if the id is the master and set MasterId accordingly
+		if id != "" {
+			if (id[0] == 'M') && (p.Master == "") {
+				p.Master = id
+				updated = true //i am unsure if this is going to be problems if it is more than one master on the network
 			}
 		}
 
@@ -145,6 +148,7 @@ func ExtractProcessIdFromPeer(peer string) string {
 func GetPeerUpdate(peerCh chan PeerUpdate, masterCh chan string) {
 	for {
 		p := <-peerCh
+		fmt.Println("Hei her er jeg inni peerUpdate")
 		PrintUpdatedPeers(p)
 		//Send master to masterCh
 		if p.Master != ""{

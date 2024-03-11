@@ -315,6 +315,7 @@ func Receive(port string, id string /*connectionsCh chan map[string]net.Conn,*/,
 	buffer := make([]byte, 1024)
 	for {
 		conn, err := listener.Accept()
+		//conn.Read()
 		if err != nil {
 			fmt.Printf("[error] Failed to create connection with error: %v\n", err)
 			continue
@@ -336,7 +337,6 @@ func ReceiveHandler(conn net.Conn, buffer []byte, tj TaggedJson, channels map[st
 	defer conn.Close()
 	for {
 
-		// [Her leser jeg slavens ID]
 		length, err := conn.Read(buffer)
 		if err != nil {
 			fmt.Printf("[error] Failed to read: %v\n", err)
