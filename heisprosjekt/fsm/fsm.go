@@ -4,14 +4,14 @@ import (
 	"Heis/cost_fns"
 	"Heis/driver-go/elevio"
 	"Heis/elevator"
+	"Heis/network/tcp"
 	"Heis/requests"
-	"Heis/timer"
 	"fmt"
 )
 
 // Finite state machine
 
-func ButtonsAndRequests(elevatorID string, isMaster bool, elevUpdateRealtimeCh <-chan elevator.Elevator, drv_buttons chan elevio.ButtonEvent, ElevatorTx chan elevator.Elevator, mapOfElevsTx chan map[string]elevator.Elevator, ElevatorRx chan elevator.Elevator, mapOfElevsRx chan map[string]elevator.Elevator, newOrderCh chan<- map[string]elevator.Elevator) {
+func ButtonsAndRequests(masterPort string, elevatorID string, isMaster bool, elevUpdateRealtimeCh <-chan elevator.Elevator, drv_buttons chan elevio.ButtonEvent /*elevatorTx chan elevator.Elevator,*/, mapOfElevsTx chan map[string]elevator.Elevator, elevatorRx chan elevator.Elevator, mapOfElevsRx chan map[string]elevator.Elevator, newOrderCh chan<- map[string]elevator.Elevator, lightsCh <-chan int) {
 	elev := elevator.InitElev()
 	elev.ElevID = elevatorID
 
@@ -44,30 +44,34 @@ func ButtonsAndRequests(elevatorID string, isMaster bool, elevUpdateRealtimeCh <
 			} else {
 
 				elev.Requests[btn_floor][btn_type] = true
-				ElevatorTx <- elev
+				// elevatorTx <- elev
+				tcpConn, _ := tcp.TransmitConn(masterPort, elev.ElevID)
+				tcp.Transmiter(tcpConn, elev)
 
 			}
 
-		case a := <-ElevatorRx:
+		case a := <-elevatorRx:
 			if isMaster {
+				fmt.Println("Jeg mottok en heis nå: ", a)
 				mapOfElevs[a.ElevID] = a
 				mapOfElevs := cost_fns.RunCostFunc(mapOfElevs)
 				mapOfElevsTx <- mapOfElevs
 				newOrderCh <- mapOfElevs
-
 			}
+
 		case a := <-mapOfElevsRx:
 			if !isMaster {
 				mapOfElevs = a
 				newOrderCh <- mapOfElevs
-
 			}
+		case <-lightsCh:
+			elevator.SetAllLights(elev, mapOfElevs)
 
 		}
 	}
 }
 
-func FloorObstrStop(isMaster bool, elevatorId string, elevUpdateRealtimeCh chan<- elevator.Elevator, drv_floors chan int, drv_stop chan bool, drv_obstr chan bool, ElevatorTx chan<- elevator.Elevator, newOrderCh <-chan map[string]elevator.Elevator, doorTimerCh chan bool, timedOut chan int) {
+func FloorObstrStop(masterPort string, isMaster bool, elevatorId string, elevUpdateRealtimeCh chan<- elevator.Elevator, drv_floors chan int /*elevatorTx chan elevator.Elevator,*/, newOrderCh <-chan map[string]elevator.Elevator, doorTimerCh chan bool, timedOut chan int, lightsCh chan<- int) {
 	elev := elevator.InitElev()
 	elev.ElevID = elevatorId
 
@@ -83,25 +87,25 @@ func FloorObstrStop(isMaster bool, elevatorId string, elevUpdateRealtimeCh chan<
 			elev = a[elev.ElevID]
 
 			elevUpdateRealtimeCh <- elev
-			sendElevToMaster(isMaster, ElevatorTx, elev) //(trenger vi denne?)
-			elev = requests.OnRequest(elev)
+			sendElevToMaster(masterPort, isMaster, elev) //(trenger vi denne?)
+			elev = requests.OnRequest(elev, lightsCh)
 			elevUpdateRealtimeCh <- elev
-			sendElevToMaster(isMaster, ElevatorTx, elev)
+			sendElevToMaster(masterPort, isMaster, elev)
 
 		case a := <-drv_floors:
 			fmt.Printf("Floor: %+v\n", a)
 			elev.Floor = a
 			elevUpdateRealtimeCh <- elev
 			elevio.SetFloorIndicator(elev.Floor)
-			sendElevToMaster(isMaster, ElevatorTx, elev)
+			sendElevToMaster(masterPort, isMaster, elev)
 			switch elev.Behaviour {
 			case elevator.EB_Moving:
-				if requests.Requests_shouldStop(elev) {
+				if requests.ShouldStop(elev) {
 					elevio.SetMotorDirection(elevio.MD_Stop)
 					elev.Behaviour = elevator.EB_DoorOpen
 					elevUpdateRealtimeCh <- elev
-					sendElevToMaster(isMaster, ElevatorTx, elev)
-					elevator.SetAllLights(elev)
+					sendElevToMaster(masterPort, isMaster, elev)
+					lightsCh <- 1
 					doorTimerCh <- true
 				}
 
@@ -111,11 +115,11 @@ func FloorObstrStop(isMaster bool, elevatorId string, elevUpdateRealtimeCh chan<
 
 		case <-timedOut:
 			fmt.Println("gikk inn i timedout")
-			elev = timer.OnDoorTimeout(elev, doorTimerCh)
+			elev = requests.OnDoorTimeout(elev, doorTimerCh, lightsCh)
 			fmt.Println("gikk inn i timedout")
 			elevUpdateRealtimeCh <- elev
 
-			sendElevToMaster(isMaster, ElevatorTx, elev)
+			sendElevToMaster(masterPort, isMaster, elev)
 			fmt.Println("Managed to send floor update")
 			// case a := <-drv_stop:
 			// 	fmt.Printf("Stop button: %+v\n", a)
@@ -126,9 +130,11 @@ func FloorObstrStop(isMaster bool, elevatorId string, elevUpdateRealtimeCh chan<
 
 }
 
-func sendElevToMaster(isMaster bool, updateElev chan<- elevator.Elevator, elev elevator.Elevator) {
+func sendElevToMaster(masterPort string, isMaster bool, elev elevator.Elevator) {
 	if !isMaster {
-		updateElev <- elev
+		// updateElev <- elev
+		tcpConn, _ := tcp.TransmitConn(masterPort, elev.ElevID)
+		tcp.Transmiter(tcpConn, elev)
 	}
 }
 
