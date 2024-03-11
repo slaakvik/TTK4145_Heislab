@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net"
 	"sort"
-	"strings"
 	"time"
 	"Heis/network/localip"
 	"os"
+	"strings"
 )
 
 type PeerUpdate struct {
