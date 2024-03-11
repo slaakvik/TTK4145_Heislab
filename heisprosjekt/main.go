@@ -1,13 +1,10 @@
 package main
 
 import (
-	//"Heis/cost_fns"
 	"Heis/driver-go/elevio"
 	"Heis/elevator"
-	"Heis/timer"
-
-	// "Heis/elevator"
 	"Heis/fsm"
+	"Heis/timer"
 
 	"Heis/network/bcast"
 	"Heis/network/netfuncs"
@@ -69,20 +66,11 @@ func main() {
 	mapOfElevsRx := make(chan map[string]elevator.Elevator)
 	go bcast.Transmitter(16524, mapOfElevsTx)
 	go bcast.Receiver(16524, mapOfElevsRx)
+
 	//Master slave
 	isMaster := true
-	//masterOrders := make(chan map[string][][2]bool)
 
 	fmt.Printf("Started!\n")
-	//cost function test:
-	// input := cost_fns.InputToCost(elev)
-	// cost_fns.HRA_funcs(input)
-	//elevator.Elevator_print(elev)
-
-	// if elevio.GetFloor() == -1 {
-	// 	elev = fsm.OnInitBetweenFloors(elev)
-	// 	elevator.Elevator_print(elev)
-	// }
 	go fsm.ButtonsAndRequests(eleviId, isMaster, elevUpdateRealtimeCh, drv_buttons, ElevatorTx, mapOfElevsTx, ElevatorRx, mapOfElevsRx, newOrderCh)
 	go fsm.FloorObstrStop(isMaster, eleviId, elevUpdateRealtimeCh, drv_floors, drv_stop, drv_obstr, ElevatorTx, newOrderCh, doorTimerCh, timedOut)
 
@@ -91,33 +79,3 @@ func main() {
 	go timer.Timer(doorTimerCh, timedOut)
 	select {}
 }
-
-// for {
-// 	//elevator.Elevator_print(elev)
-// 	//fmt.Print(eleviId)
-// 	select {
-// 	// case a := <-drv_buttons:
-// 	// 	fmt.Printf("Button: %+v\n", a)
-// 	// 	fsm.OnRequestButtonPress(&elev, a.Floor, a.Button)
-
-// 	// case a := <-drv_floors: // a er etasjen heisen er i
-// 	// 	fmt.Printf("Floor: %+v\n", a)
-// 	// 	fsm.OnFloorArrival(&elev, a)
-
-// 	// case a := <-drv_stop:
-// 	// 	fmt.Printf("Stop button: %+v\n", a)
-// 	// 	// fsm.Fsm_onStopButtonPress(&elev)
-// 	// 	fsm.Stop_functionality(a, elev)
-
-// 	// case a := <-drv_obstr:
-// 	// 	fmt.Printf("Obstruction %+v\n", a)
-// 	// 	fsm.Obstruction_functionality(a, elev)
-
-// 	case a := <-peerUpdateCh:
-// 		//fmt.Printf("%+v\n", a)
-// 		netfuncs.PrintPeerUpdate(a)
-// 	case a := <-ElevatorRx:
-// 		fmt.Printf("Received: %+v\n", a)
-
-// 	}
-// }
