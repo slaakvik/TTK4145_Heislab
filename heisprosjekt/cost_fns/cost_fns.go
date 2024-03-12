@@ -44,7 +44,7 @@ type HRAInput struct {
 //		return input
 //	}
 func RunCostFunc(elevMap map[string]elevator.Elevator) map[string]elevator.Elevator {
-	commonHallCalls := orHallCalls(elevMap)
+	commonHallCalls := elevator.OrHallCalls(elevMap)
 	tempElevMap := elevMap
 	for k, v := range tempElevMap {
 		if v.Failure {
@@ -70,16 +70,6 @@ func elevToHRAElevState(elev elevator.Elevator) HRAElevState {
 	}
 }
 
-func orHallCalls(allElevs map[string]elevator.Elevator) [][2]bool {
-	result := make([][2]bool, elevio.NumFloors)
-	for _, elev := range allElevs {
-		for j, row := range elevator.GetHallCalls(elev) {
-			result[j][0] = result[j][0] || row[0]
-			result[j][1] = result[j][1] || row[1]
-		}
-	}
-	return result
-}
 func inputToCost(commonHallCalls [][2]bool, elevMap map[string](elevator.Elevator)) HRAInput {
 	// commonHallCalls := orHallCalls(elevMap)
 
