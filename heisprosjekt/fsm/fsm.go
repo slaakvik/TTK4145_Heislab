@@ -1,143 +1,168 @@
 package fsm
 
 import (
-	"Heis/cost_fns"
 	"Heis/driver-go/elevio"
 	"Heis/elevator"
 	"Heis/requests"
-	"Heis/timer"
 	"fmt"
+	"time"
 )
 
 // Finite state machine
 
-func ButtonsAndRequests(elevatorID string, isMaster bool, elevUpdateRealtimeCh <-chan elevator.Elevator, drv_buttons chan elevio.ButtonEvent, ElevatorTx chan elevator.Elevator, mapOfElevsTx chan map[string]elevator.Elevator, ElevatorRx chan elevator.Elevator, mapOfElevsRx chan map[string]elevator.Elevator, newOrderCh chan<- map[string]elevator.Elevator) {
-	elev := elevator.InitElev()
-	elev.ElevID = elevatorID
-
-	mapOfElevs := make(map[string]elevator.Elevator)
-	mapOfElevs[elev.ElevID] = elev
-
-	//newOrderCh <- mapOfElevs
-
-	//dersom man er master skal man sette opp en cost func map og legge til seg selv:
-	fmt.Println(mapOfElevs)
-	fmt.Println("______________")
-
-	for {
-		select {
-		case a := <-elevUpdateRealtimeCh:
-			elev = a
-			mapOfElevs[elev.ElevID] = elev
-		case a := <-drv_buttons:
-			btn_floor := a.Floor
-			btn_type := a.Button
-			fmt.Printf("Button: %+v\n", a)
-			if isMaster {
-				elev.Requests[btn_floor][btn_type] = true
-
-				mapOfElevs[elev.ElevID] = elev
-				mapOfElevs := cost_fns.RunCostFunc(mapOfElevs)
-				mapOfElevsTx <- mapOfElevs
-				newOrderCh <- mapOfElevs
-
-			} else {
-
-				elev.Requests[btn_floor][btn_type] = true
-				ElevatorTx <- elev
-
-			}
-
-		case a := <-ElevatorRx:
-			if isMaster {
-				mapOfElevs[a.ElevID] = a
-				mapOfElevs := cost_fns.RunCostFunc(mapOfElevs)
-				mapOfElevsTx <- mapOfElevs
-				newOrderCh <- mapOfElevs
-
-			}
-		case a := <-mapOfElevsRx:
-			if !isMaster {
-				mapOfElevs = a
-				newOrderCh <- mapOfElevs
-
-			}
-
-		}
-	}
+// Timer goroutine
+func FSM_DoorTimer( /*elev *elevator.Elevator,*/ quit chan int) { // Door opens for three seconds
+	time.Sleep(3 * time.Second)
+	quit <- 1
 }
 
-func FloorObstrStop(isMaster bool, elevatorId string, elevUpdateRealtimeCh chan<- elevator.Elevator, drv_floors chan int, drv_stop chan bool, drv_obstr chan bool, ElevatorTx chan<- elevator.Elevator, newOrderCh <-chan map[string]elevator.Elevator, doorTimerCh chan bool, timedOut chan int) {
-	elev := elevator.InitElev()
-	elev.ElevID = elevatorId
+func Fsm_onInitBetweenFloors(elev *elevator.Elevator) {
+	elevio.SetMotorDirection(elevio.MD_Down)
+	elev.Behaviour = elevator.EB_Moving
+}
 
-	if elevio.GetFloor() == -1 {
-		elev = elevator.OnInitBetweenFloors(elev)
-		elevUpdateRealtimeCh <- elev
-		elevator.Elevator_print(elev)
+func setAllLights(elev elevator.Elevator) {
+	for f := 0; f < elevio.NumFloors; f++ {
+		for b := 0; b < elevio.NumButtons; b++ {
+			elevio.SetButtonLamp(elevio.ButtonType(b), f, elev.Requests[f][b])
+		}
 	}
+	elevio.SetDoorOpenLamp(elev.Behaviour == elevator.EB_DoorOpen)
 
-	for {
-		select {
-		case a := <-newOrderCh:
-			elev = a[elev.ElevID]
+}
 
-			elevUpdateRealtimeCh <- elev
-			sendElevToMaster(isMaster, ElevatorTx, elev) //(trenger vi denne?)
-			elev = requests.OnRequest(elev)
-			elevUpdateRealtimeCh <- elev
-			sendElevToMaster(isMaster, ElevatorTx, elev)
+func Fsm_onRequestButtonPress(elev *elevator.Elevator, btn_floor int, btn_type elevio.ButtonType) {
 
-		case a := <-drv_floors:
-			fmt.Printf("Floor: %+v\n", a)
-			elev.Floor = a
-			elevUpdateRealtimeCh <- elev
-			elevio.SetFloorIndicator(elev.Floor)
-			sendElevToMaster(isMaster, ElevatorTx, elev)
-			switch elev.Behaviour {
-			case elevator.EB_Moving:
-				if requests.Requests_shouldStop(elev) {
-					elevio.SetMotorDirection(elevio.MD_Stop)
-					elev.Behaviour = elevator.EB_DoorOpen
-					elevUpdateRealtimeCh <- elev
-					sendElevToMaster(isMaster, ElevatorTx, elev)
-					elevator.SetAllLights(elev)
-					doorTimerCh <- true
-				}
+	// fmt.Printf("\n\n%s(%d, %s)\n", "fsm_onRequestButtonPress", btnFloor, btnType.toString())
+	// elevator_print(elevator)
+	//
 
-			default:
+	switch elev.Behaviour {
+	case elevator.EB_DoorOpen:
+		if requests.Requests_shouldClearImmediately(*elev, btn_floor, btn_type) {
 
-			}
+			setAllLights(*elev)
+			quit := make(chan int)
+			go FSM_DoorTimer(quit)
 
-		case <-timedOut:
-			fmt.Println("gikk inn i timedout")
-			elev = timer.OnDoorTimeout(elev, doorTimerCh)
-			fmt.Println("gikk inn i timedout")
-			elevUpdateRealtimeCh <- elev
+			<-quit
+			Fsm_onDoorTimeout(elev)
 
-			sendElevToMaster(isMaster, ElevatorTx, elev)
-			fmt.Println("Managed to send floor update")
-			// case a := <-drv_stop:
-			// 	fmt.Printf("Stop button: %+v\n", a)
-			// 	stop_functionality(a, elev)
+			// elev.Behaviour = elevator.EB_Idle
+			// elevio.SetDoorOpenLamp(0)
 
+		} else {
+			elev.Requests[btn_floor][btn_type] = true
+		}
+
+	case elevator.EB_Moving:
+		elev.Requests[btn_floor][btn_type] = true
+
+	case elevator.EB_Idle:
+		if requests.Requests_shouldClearImmediately(*elev, btn_floor, btn_type) {
+			elev.Behaviour = elevator.EB_DoorOpen
+			setAllLights(*elev)
+			quit := make(chan int)
+			go FSM_DoorTimer(quit)
+			<-quit
+			Fsm_onDoorTimeout(elev)
+
+		} else {
+			elev.Requests[btn_floor][btn_type] = true
+			pair := requests.Requests_chooseDirection(*elev)
+			elev.Dirn = pair.Dirn
+			//elevio.SetMotorDirection(elev.Dirn)
+			elev.Behaviour = pair.Behaviour
+			setAllLights(*elev)
+		}
+		switch elev.Behaviour {
+		case elevator.EB_DoorOpen:
+			//elevio.SetDoorOpenLamp(true)
+			//elev.DoorOpen=true
+			//time.Sleep(time.Duration(elev.DoorOpenDuration_s * float32(time.Second)))
+			//time.NewTimer(time.Duration(elev.DoorOpenDuration_s))
+
+			requests.Requests_clearAtCurrentFloor(elev) //kan dette ha noe å gjøre med at vi ikke klarer å motta bestillinger fra en etasje vi allerede er i?
+			//elev.Behaviour = elevator.EB_Idle
+
+		case elevator.EB_Moving:
+			elevio.SetMotorDirection(elev.Dirn)
+
+		case elevator.EB_Idle:
 		}
 	}
 
+	setAllLights(*elev)
+
+	//fmt.Println("\nNew state:")
 }
 
-func sendElevToMaster(isMaster bool, updateElev chan<- elevator.Elevator, elev elevator.Elevator) {
-	if !isMaster {
-		updateElev <- elev
-	}
-}
+func Fsm_onDoorTimeout(elev *elevator.Elevator) {
 
-func stop_functionality(stop bool, elev elevator.Elevator) {
-	if stop {
-		elevio.SetMotorDirection(elevio.MD_Stop)
-		elevio.SetStopLamp(true)
-	} else {
+	//printf("\n\n%s()\n", __FUNCTION__);
+	//elevator_print(elevator);
+
+	requests.Requests_clearAtCurrentFloor(elev)
+	elev.Behaviour = elevator.EB_Idle
+	setAllLights(*elev)
+
+	/*switch elev.Behaviour {
+	case elevator.EB_DoorOpen:
+
+		//timer_start(elevator.config.doorOpenDuration_s);
+		requests.Requests_clearAtCurrentFloor(elev)
+		elev.Behaviour = elevator.EB_Idle
+		setAllLights(*elev)
+	case elevator.EB_Moving:
+	case elevator.EB_Idle:
+		elevio.SetDoorOpenLamp(false)
 		elevio.SetMotorDirection(elev.Dirn)
-		elevio.SetStopLamp(false)
+	default:
+
 	}
+	*/
+	//fmt.Println("\nNew state:")
+	elevator.Elevator_print(*elev)
+
+}
+
+func Fsm_onFloorArrival(elev *elevator.Elevator, newFloor int) { //elevptr
+	//printf("\n\n%s(%d)\n", __FUNCTION__, newFloor);
+	//elevator_print(elevator);
+	elev.Floor = newFloor
+
+	elevio.SetFloorIndicator(elev.Floor)
+
+	switch elev.Behaviour {
+	case elevator.EB_Moving:
+		if requests.Requests_shouldStop(*elev) {
+			elevio.SetMotorDirection(elevio.MD_Stop)
+			elev.Behaviour = elevator.EB_DoorOpen
+			setAllLights(*elev)
+			quit := make(chan int)
+			go FSM_DoorTimer(quit)
+			<-quit
+			//elevio.SetDoorOpenLamp(true)
+			// elev = requests.Requests_clearAtCurrentFloor(*elev)
+			requests.Requests_clearAtCurrentFloor(elev)
+
+			//time.Sleep(time.Duration(elev.DoorOpenDuration_s) * time.Second)
+
+			//@ Det under skrev vi onsdag kveld.
+			pair := requests.Requests_chooseDirection(*elev)
+			elev.Dirn = pair.Dirn
+			elev.Behaviour = pair.Behaviour
+			setAllLights(*elev) //@ need to rewrite this function. Hvorfor er denne funksjonen her i det hele tatt?
+			elevio.SetMotorDirection(elev.Dirn)
+		}
+	default:
+		// elev.Dirn = elevio.MD_Stop
+		// elevio.SetMotorDirection(elev.Dirn)
+		//@ Disse linjene må vel være med? Slik at heisen stopper hvis den ikke allerede er moving
+	}
+
+}
+
+func Fsm_onStopButtonPress(elev *elevator.Elevator) {
+	fmt.Printf("%s()\n", "STOPP DA!")
 }
