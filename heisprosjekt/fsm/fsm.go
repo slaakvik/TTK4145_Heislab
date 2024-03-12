@@ -115,7 +115,7 @@ func FloorObstrStop(masterPort string, isMaster bool, elevatorId string, elevUpd
 
 		case <-timedOut:
 			fmt.Println("gikk inn i timedout")
-			elev = requests.OnDoorTimeout(elev, doorTimerCh, lightsCh)
+			elev = requests.OnDoorTimeout(elev, doorTimerCh, lightsCh, elevUpdateRealtimeCh)
 			fmt.Println("gikk inn i timedout")
 			elevUpdateRealtimeCh <- elev
 

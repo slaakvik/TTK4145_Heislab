@@ -14,14 +14,14 @@ type DirnBehaviourPair struct {
 	Behaviour elevator.ElevatorBehaviour
 }
 
-func OnDoorTimeout(elev elevator.Elevator, doorTimerCh chan bool, lightsCh chan<- int) elevator.Elevator {
+func OnDoorTimeout(elev elevator.Elevator, doorTimerCh chan bool, lightsCh chan<- int, elevUpdateRealTimeCh chan<- elevator.Elevator) elevator.Elevator {
 
 	elev = clearAtCurrentFloor(elev)
 	pair := chooseDirection(elev)
 
 	elev.Dirn = pair.Dirn
 	elev.Behaviour = pair.Behaviour
-
+	elevUpdateRealTimeCh <- elev
 	// elevator.SetAllLights(elev)
 	lightsCh <- 1
 
