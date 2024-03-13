@@ -14,7 +14,26 @@ type DirnBehaviourPair struct {
 	Behaviour elevator.ElevatorBehaviour
 }
 
-func OnRequest(elev elevator.Elevator) elevator.Elevator {
+func OnDoorTimeout(elev elevator.Elevator, doorTimerCh chan bool, lightsCh chan<- int, elevUpdateRealTimeCh chan<- elevator.Elevator) elevator.Elevator {
+
+	elev = clearAtCurrentFloor(elev)
+	pair := chooseDirection(elev)
+
+	elev.Dirn = pair.Dirn
+	elev.Behaviour = pair.Behaviour
+	elevUpdateRealTimeCh <- elev
+	// elevator.SetAllLights(elev)
+	lightsCh <- 1
+
+	if elev.Behaviour == elevator.EB_DoorOpen {
+		doorTimerCh <- true
+	} else {
+		elevio.SetMotorDirection(elev.Dirn)
+	}
+
+	return elev
+}
+func OnRequest(elev elevator.Elevator, lightsCh chan<- int) elevator.Elevator {
 	// switch elev.Behaviour {
 	// case elevator.EB_DoorOpen:
 	// 	//elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
@@ -26,14 +45,17 @@ func OnRequest(elev elevator.Elevator) elevator.Elevator {
 	//elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
 	if elev.Behaviour == elevator.EB_Idle {
 		fmt.Println("on request while idle")
-		pair := Requests_chooseDirection(elev)
+		pair := chooseDirection(elev)
 		elev.Dirn = pair.Dirn
 		elevio.SetMotorDirection(elev.Dirn)
 		elev.Behaviour = pair.Behaviour
+		
 	}
 	// }
 
-	elevator.SetAllLights(elev)
+	// elevator.SetAllLights(elev)
+	lightsCh <- 1
+
 	return elev
 }
 
@@ -68,7 +90,7 @@ func requests_here(e elevator.Elevator) bool {
 	return false
 }
 
-func Requests_chooseDirection(e elevator.Elevator) DirnBehaviourPair {
+func chooseDirection(e elevator.Elevator) DirnBehaviourPair {
 	switch e.Dirn {
 	case elevio.MD_Up:
 		if requests_above(e) {
@@ -105,7 +127,7 @@ func Requests_chooseDirection(e elevator.Elevator) DirnBehaviourPair {
 	}
 }
 
-func Requests_shouldStop(e elevator.Elevator) bool {
+func ShouldStop(e elevator.Elevator) bool {
 	switch e.Dirn {
 	case elevio.MD_Down:
 		return e.Requests[e.Floor][elevio.BT_HallDown] || e.Requests[e.Floor][elevio.BT_Cab] || !requests_below(e)
@@ -130,7 +152,7 @@ func Requests_shouldClearImmediately(e elevator.Elevator, btn_floor int, btn_typ
 	} //Må man ha klammeparentes her?
 }
 
-func Requests_clearAtCurrentFloor(e elevator.Elevator) elevator.Elevator {
+func clearAtCurrentFloor(e elevator.Elevator) elevator.Elevator {
 	e.Requests[e.Floor][elevio.BT_Cab] = false
 	switch e.Dirn {
 	case elevio.MD_Up:
