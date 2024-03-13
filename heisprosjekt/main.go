@@ -35,7 +35,7 @@ func main() {
 
 	_numFloors := elevio.NumFloors
 	//_numButtons := elevio.NumButtons
-	// elevio.Init("localhost:15657", _numFloors)
+	//elevio.Init("localhost:15657", _numFloors)
 	elevio.Init("localhost:15668", _numFloors)
 
 	masterPort := "8070"
@@ -99,7 +99,7 @@ func main() {
 	//go netfuncs.Bcast_message(ElevatorTx, elev, eleviId)
 	//send cost func result to network
 	sendMapToSlavesCh := make(chan map[string]elevator.Elevator)
-	mapOfElevsRx := make(chan map[string]elevator.Elevator)
+	receiveMapFromMasterCh := make(chan map[string]elevator.Elevator)
 	// go bcast.Transmitter(16524, mapOfElevsTx)
 	// go bcast.Receiver(16524, mapOfElevsRx)
 
@@ -108,9 +108,11 @@ func main() {
 	connEstablishedForSlave := make(chan struct{})
 	ListenAccepted := make(chan struct{})
 
-	go establish_connection.ReceiveConn(eleviId, masterPort, masterConnCh, connectionsCh, sendMasterIdToReceive, ListenAccepted)
+	go establish_connection.ReceiveConn(eleviId, masterPort, masterConnCh, connectionsCh,
+		sendMasterIdToReceive, ListenAccepted)
 
-	go slave.NotifyMaster(masterPort, eleviId, sendMasterIdToNotifyMaster, sendMasterIdToGetNotifyFromMaster, sendMyselfToMasterTx, slaveConnCh, connEstablishedForSlave)
+	go slave.NotifyMaster(masterPort, eleviId, sendMasterIdToNotifyMaster, sendMasterIdToGetNotifyFromMaster,
+		sendMyselfToMasterTx, slaveConnCh, connEstablishedForSlave)
 	fmt.Println("Nå har jeg nådd sperren")
 
 	if !isMaster {
@@ -118,15 +120,19 @@ func main() {
 	}
 
 	fmt.Printf("Started!\n")
-	go fsm.ButtonsAndRequests(masterPort, eleviId, isMaster, elevUpdateRealtimeCh, drv_buttons /*elevatorTx, */, sendMapToSlavesCh, getElevFromSlaveRx, mapOfElevsRx, newOrderCh, lightsCh, sendMyselfToMasterTx)
-	go fsm.FloorObstrStop(masterPort, isMaster, eleviId, elevUpdateRealtimeCh, drv_floors /*elevatorTx,*/, newOrderCh, doorTimerCh, timedOut, lightsCh, sendMyselfToMasterTx)
+	go fsm.ButtonsAndRequests(masterPort, eleviId, isMaster, elevUpdateRealtimeCh,
+		drv_buttons /*elevatorTx, */, sendMapToSlavesCh, getElevFromSlaveRx, receiveMapFromMasterCh,
+		newOrderCh, lightsCh, sendMyselfToMasterTx)
+
+	go fsm.FloorObstrStop(masterPort, isMaster, eleviId, elevUpdateRealtimeCh, drv_floors, /*elevatorTx,*/
+		newOrderCh, doorTimerCh, timedOut, lightsCh, sendMyselfToMasterTx)
 
 	//go fsm.FSM(drv_buttons, drv_floors, drv_stop, drv_obstr, eleviId, isMaster, ElevatorTx, CostTx, masterOrders, ElevatorRx, CostRx)
 	//go netfuncs.Network_FSM(peerUpdateCh)
 	go timer.Timer(doorTimerCh, timedOut)
 
 	// Slave
-	go slave.GetNotifyFromMaster(eleviId, slaveConnCh, sendMasterIdToGetNotifyFromMaster, mapOfElevsRx)
+	go slave.GetNotifyFromMaster(eleviId, slaveConnCh, sendMasterIdToGetNotifyFromMaster, receiveMapFromMasterCh)
 
 	// Master
 	fmt.Println("Nå har vi nådd sperren for master")
@@ -135,7 +141,7 @@ func main() {
 		<-ListenAccepted
 	}
 	fmt.Println("Nå er vi kommet forbi sperren for master")
-	go tcp.SendAndReceive(masterConnCh, connectionsCh, mapOfElevsCh, getElevFromSlaveRx)
+	go tcp.SendAndReceive(masterConnCh, connectionsCh, sendMapToSlavesCh, getElevFromSlaveRx)
 	// go tcp.Receive(masterPort, eleviId, elevatorRx)
 
 	select {}

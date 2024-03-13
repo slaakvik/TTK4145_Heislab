@@ -15,8 +15,8 @@ import (
 
 func ButtonsAndRequests(masterPort string, elevatorID string, isMaster bool, elevUpdateRealtimeCh <-chan elevator.Elevator,
 	drv_buttons chan elevio.ButtonEvent, /*elevatorTx chan elevator.Elevator,*/
-	mapOfElevsTx chan map[string]elevator.Elevator, getElevFromSlave chan elevator.Elevator,
-	mapOfElevsRx chan map[string]elevator.Elevator, newOrderCh chan<- map[string]elevator.Elevator,
+	sendMapToSlavesCh chan<- map[string]elevator.Elevator, getElevFromSlave chan elevator.Elevator,
+	receiveMapFromMasterCh <-chan map[string]elevator.Elevator, newOrderCh chan<- map[string]elevator.Elevator,
 	lightsCh <-chan int, sendMyselfToMaster chan elevator.Elevator) {
 
 	elev := elevator.InitElev()
@@ -41,7 +41,7 @@ func ButtonsAndRequests(masterPort string, elevatorID string, isMaster bool, ele
 				fmt.Println("master har fått buttonpress")
 				mapOfElevs[elev.ElevID] = elev
 				mapOfElevs := cost_fns.RunCostFunc(mapOfElevs)
-				mapOfElevsTx <- mapOfElevs
+				sendMapToSlavesCh <- mapOfElevs
 				fmt.Println("Sendte til alle")
 				newOrderCh <- mapOfElevs
 
@@ -59,11 +59,11 @@ func ButtonsAndRequests(masterPort string, elevatorID string, isMaster bool, ele
 				fmt.Println("Jeg mottok en heis nå: ", a)
 				mapOfElevs[a.ElevID] = a
 				mapOfElevs := cost_fns.RunCostFunc(mapOfElevs)
-				mapOfElevsTx <- mapOfElevs
+				sendMapToSlavesCh <- mapOfElevs
 				newOrderCh <- mapOfElevs
 			}
 
-		case a := <-mapOfElevsRx:
+		case a := <-receiveMapFromMasterCh:
 			if !isMaster {
 				mapOfElevs = a
 				newOrderCh <- mapOfElevs

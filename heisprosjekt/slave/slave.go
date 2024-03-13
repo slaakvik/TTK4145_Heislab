@@ -19,9 +19,11 @@ import (
 /**
  * @func slave tries to connect to master
  */
-func NotifyMaster(port string, id string, sendMasterIdToNotifyMaster chan string, sendMasterIdToGetNotifyFromMaster chan string, sendElevToMaster chan elevator.Elevator, slaveConnCh chan<- net.Conn, connEstablished chan struct{}) {
+func NotifyMaster(port string, id string, sendMasterIdToNotifyMaster chan string, sendMasterIdToGetNotifyFromMaster chan string,
+	sendElevToMaster chan elevator.Elevator, slaveConnCh chan<- net.Conn, connEstablished chan struct{}) {
 	var elev elevator.Elevator
-	var slaveConn net.Conn
+	var slaveConn net.Conn = nil // ??
+	var err error                // ??
 	for {
 		select {
 		case m := <-sendMasterIdToNotifyMaster:
@@ -31,15 +33,18 @@ func NotifyMaster(port string, id string, sendMasterIdToNotifyMaster chan string
 				masterIp := peers.ExtractIpFromPeer(m)
 				fmt.Println("Master IP:", masterIp)
 				fmt.Printf("slaveConn før: %v\n", slaveConn)
-				slaveConn, err := establish_connection.TransmitConn(port, id, masterIp)
+				slaveConn, err = establish_connection.TransmitConn(port, id, masterIp)
 				fmt.Printf("slaveConn etter: %v\n", slaveConn)
-				if slaveConn != nil {
-					fmt.Println("closer nå jeg (jeg er slave)")
+				//if slaveConn != nil {
+				fmt.Println("closer nå jeg (jeg er slave)")
+				if _, ok := <-connEstablished; ok {
 					close(connEstablished)
-					fmt.Println("nå har jeg closet")
-					sendMasterIdToGetNotifyFromMaster <- m
-					slaveConnCh <- slaveConn
 				}
+				//close(connEstablished)
+				fmt.Println("nå har jeg closet")
+				sendMasterIdToGetNotifyFromMaster <- m
+				slaveConnCh <- slaveConn
+				//}
 				//fmt.Printf("Her1\n")
 				if err != nil {
 					fmt.Printf("[error] Failed to Dial: %v\n", err)
@@ -66,7 +71,8 @@ func NotifyMaster(port string, id string, sendMasterIdToNotifyMaster chan string
 /**
  * @func slave tries to connect to master
  */
-func GetNotifyFromMaster(id string, slaveConnCh <-chan net.Conn, sendMasterIdToGetNotifyFromMaster chan string, mapOfElevsRx chan map[string]elevator.Elevator) {
+func GetNotifyFromMaster(id string, slaveConnCh <-chan net.Conn, sendMasterIdToGetNotifyFromMaster chan string,
+	receiveMapFromMasterCh chan map[string]elevator.Elevator) {
 	masterId := ""
 	var slaveConn net.Conn
 	for {
@@ -77,7 +83,7 @@ func GetNotifyFromMaster(id string, slaveConnCh <-chan net.Conn, sendMasterIdToG
 
 			case c := <-slaveConnCh:
 				slaveConn = c
-				go tcp.ReceiveHandler(slaveConn, mapOfElevsRx /* kanaler som slave lytter på*/)
+				go tcp.ReceiveHandler(slaveConn, receiveMapFromMasterCh /* kanaler som slave lytter på*/)
 			default:
 			}
 		}

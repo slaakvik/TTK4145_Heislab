@@ -85,8 +85,9 @@ func ReceiveConn(id string, port string, masterConnCh chan<- net.Conn, connectio
 					masterConnCh <- masterConn
 					connectionsCh <- connections
 
-					close(listenAccepted)
-
+					if _, ok := <-listenAccepted; ok {
+						close(listenAccepted)
+					}
 				}
 			}
 		}
