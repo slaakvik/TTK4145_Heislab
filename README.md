@@ -293,3 +293,35 @@ func timer(obstructionChannel chan bool, doorTimerChannel chan bool, timedOut ch
 }
 
 ```
+
+_________________________________________________________________________________________
+13.03 - tcp.ReceiveConn - løsning for å bytte mellom slave/master state
+_________________________________________________________________________________________
+
+```Go
+func receiveConn() {
+	master := make(chan int)
+	slave := make(chan int)
+
+	for {
+		select {
+		case <-master:
+			// Do stuff
+			// Check if you are master. Probably have to receive through a channel.
+			if isMaster {
+				master <- 1
+			} else {
+				slave <- 1
+			}
+		case <-slave:
+			// Do stuff
+			// Check if you are master. Probably have to receive through a channel.
+			if isMaster {
+				master <- 1
+			} else {
+				slave <- 1
+			}
+		}
+	}
+}
+```
