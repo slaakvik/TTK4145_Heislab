@@ -16,27 +16,32 @@ const (
  * @func for the slave
  */
 func TransmitConn(port string, id string, masterIp string) (net.Conn, error) {
+	fmt.Println("Nå er jeg inni TransmitConn og skal lage en addr")
 	addr, err := net.ResolveTCPAddr("tcp", masterIp+":"+port) // dette er bare foreløpig. IP-som mates inn må være destinasjonen
 	if err != nil {
 		fmt.Println("Error resolving address:", err)
 		return nil, err
 	}
+	fmt.Println("Nå er jeg inni TransmitConn og skal lage en connection")
 	conn, err := net.Dial(CONN_TYPE, addr.String())
 	if err != nil {
 		fmt.Printf("[error] Failed to Dial: %v\n", err)
 		return nil, err
 	}
+	fmt.Println("Nå er jeg inni TransmitConn og har laget en connection")
+	fmt.Println("Nå er jeg inni TransmitConn og skal skrive til connection")
 	conn.Write([]byte(id))
+	fmt.Println("Nå er jeg inni TransmitConn, men skal til å gå ut")
 	return conn, err
 }
 
 /**
  * @func for the master
  */
-func ReceiveConn(id string, port string, connCh chan net.Conn, connectionsCh chan<- map[string]net.Conn, SendMasterCh chan string) (net.Conn, error) {
+func ReceiveConn(id string, port string, masterConnCh chan<- net.Conn, connectionsCh chan<- map[string]net.Conn, sendMasterCh chan string, listenAccepted chan struct{}) (net.Conn, error) {
 	for {
 		select {
-		case master := <-SendMasterCh:
+		case master := <-sendMasterCh:
 			if id == master {
 
 				masterIp := peers.ExtractIpFromPeer(master)
@@ -61,7 +66,7 @@ func ReceiveConn(id string, port string, connCh chan net.Conn, connectionsCh cha
 				// Accept incoming connections
 				buffer := make([]byte, 1024)
 				for {
-					acceptConn, err := listener.Accept()
+					masterConn, err := listener.Accept()
 					if err != nil {
 						fmt.Println("Error accepting connection:", err)
 						continue
@@ -69,16 +74,18 @@ func ReceiveConn(id string, port string, connCh chan net.Conn, connectionsCh cha
 					fmt.Println("Accepted connection on port: " + port)
 
 					// [Her leser jeg slavens ID]
-					k, err := acceptConn.Read(buffer)
+					k, err := masterConn.Read(buffer)
 					if err != nil {
 						fmt.Printf("[error] Failed to read: %v\n", err)
 						return nil, err
 					}
 					id := string(buffer[0:k])
 
-					connections[id] = acceptConn
-					connCh <- acceptConn
+					connections[id] = masterConn
+					masterConnCh <- masterConn
 					connectionsCh <- connections
+
+					close(listenAccepted)
 
 				}
 			}

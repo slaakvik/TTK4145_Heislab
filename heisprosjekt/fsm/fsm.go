@@ -13,7 +13,12 @@ import (
 
 // Finite state machine
 
-func ButtonsAndRequests(masterPort string, elevatorID string, isMaster bool, elevUpdateRealtimeCh <-chan elevator.Elevator, drv_buttons chan elevio.ButtonEvent /*elevatorTx chan elevator.Elevator,*/, mapOfElevsTx chan map[string]elevator.Elevator, getElevFromSlave chan elevator.Elevator, mapOfElevsRx chan map[string]elevator.Elevator, newOrderCh chan<- map[string]elevator.Elevator, lightsCh <-chan int, sendMyselfToMaster chan elevator.Elevator) {
+func ButtonsAndRequests(masterPort string, elevatorID string, isMaster bool, elevUpdateRealtimeCh <-chan elevator.Elevator,
+	drv_buttons chan elevio.ButtonEvent, /*elevatorTx chan elevator.Elevator,*/
+	mapOfElevsTx chan map[string]elevator.Elevator, getElevFromSlave chan elevator.Elevator,
+	mapOfElevsRx chan map[string]elevator.Elevator, newOrderCh chan<- map[string]elevator.Elevator,
+	lightsCh <-chan int, sendMyselfToMaster chan elevator.Elevator) {
+
 	elev := elevator.InitElev()
 	elev.ElevID = elevatorID
 
@@ -33,10 +38,11 @@ func ButtonsAndRequests(masterPort string, elevatorID string, isMaster bool, ele
 			fmt.Printf("Button: %+v\n", a)
 			if isMaster {
 				elev.Requests[btn_floor][btn_type] = true
-
+				fmt.Println("master har fått buttonpress")
 				mapOfElevs[elev.ElevID] = elev
 				mapOfElevs := cost_fns.RunCostFunc(mapOfElevs)
 				mapOfElevsTx <- mapOfElevs
+				fmt.Println("Sendte til alle")
 				newOrderCh <- mapOfElevs
 
 			} else {
@@ -46,7 +52,6 @@ func ButtonsAndRequests(masterPort string, elevatorID string, isMaster bool, ele
 				sendElevToMaster(isMaster, elev, sendMyselfToMaster)
 				// tcpConn, _ := establish_connection.TransmitConn(masterPort, elev.ElevID) // vi må ha masterIp
 				// tcp.Transmit(tcpConn, elev)
-
 			}
 
 		case a := <-getElevFromSlave:
