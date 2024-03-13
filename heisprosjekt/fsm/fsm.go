@@ -18,7 +18,7 @@ func ButtonsAndRequests(masterPort string, elevatorID string, isMaster bool, ele
 	sendMapToSlavesCh chan<- map[string]elevator.Elevator, getElevFromSlave chan elevator.Elevator,
 	receiveMapFromMasterCh <-chan map[string]elevator.Elevator, newOrderCh chan<- map[string]elevator.Elevator,
 	lightsCh <-chan int, sendMyselfToMaster chan elevator.Elevator) {
-
+	fmt.Println("[ButtonsAndRequests] akkurat kommet inni")
 	elev := elevator.InitElev()
 	elev.ElevID = elevatorID
 
@@ -26,7 +26,7 @@ func ButtonsAndRequests(masterPort string, elevatorID string, isMaster bool, ele
 	mapOfElevs[elev.ElevID] = elev
 
 	fmt.Println("______________")
-
+	
 	for {
 		select {
 		case a := <-elevUpdateRealtimeCh:

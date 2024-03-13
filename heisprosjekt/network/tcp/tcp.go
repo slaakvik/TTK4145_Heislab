@@ -175,24 +175,29 @@ func CanConnectToMaster(address string, port int, timeout time.Duration) bool {
  * @func Transmit for both the master and slaves
  */
 func Transmit(conn net.Conn, data interface{}) {
-
+	fmt.Println("[Transmit] Nå har jeg akkurat kommet inni Transmit")
 	buffer, err := json.Marshal(data)
 	if err != nil {
 		fmt.Printf("[error] Failed to encode data with error: %v\n", err)
 		return
 	}
+	fmt.Println("[Transmit] Klarte å omforme data til Marshal")
 
+	fmt.Println("[Transmit] Skal til å lage en buffer")
 	buffer, err = json.Marshal(TaggedJson{reflect.TypeOf(data).Name(), buffer})
 	if err != nil {
 		fmt.Printf("[error] Failed to make buffer with error:")
 	}
 
+	fmt.Println("[Transmit] Skal til å skrive")
 	_, err = conn.Write(buffer)
 	if err != nil {
 		fmt.Printf("[error] Failed to write: %v\n", err)
 		//conn.Close() her?
 		return
 	}
+	fmt.Println("[Transmit] Hvis ingen error, fikk jeg skrevet meldingen")
+	fmt.Println("[Transmit] Nå går jeg ut")
 
 }
 
@@ -200,6 +205,7 @@ func Transmit(conn net.Conn, data interface{}) {
  * @func for the master and the slave
  */
 func ReceiveHandler(conn net.Conn, data ...interface{}) {
+	fmt.Println("[ReceiveHandler] Akkurat kommet meg inni")
 	defer conn.Close()                       // må denne være her??
 	channels := make(map[string]interface{}) // a map with called channels with each data's type, written as a string, as keys
 
@@ -210,11 +216,13 @@ func ReceiveHandler(conn net.Conn, data ...interface{}) {
 
 		channels[reflect.TypeOf(channel).Elem().Name()] = channel
 	}
+	fmt.Println("[ReceiveHandler] Fyllt ett map med ønskede kanaler")
 
 	var tj TaggedJson
 	buffer := make([]byte, 1024)
+	fmt.Println("[ReceiveHandler] På vei inn i for-loopen")
 	for {
-
+		fmt.Println("[ReceiveHandler] Er i for-loopen, og leser")
 		length, err := conn.Read(buffer)
 		if err != nil {
 			fmt.Printf("[error] Failed to read: %v\n", err)
@@ -251,26 +259,35 @@ func ReceiveHandler(conn net.Conn, data ...interface{}) {
 			Send: reflect.Indirect(value),
 		}})
 	}
-	fmt.Println("Nå er denne tråden lukket")
-
+	fmt.Println("[ReceiveHandler] Connection kunne ikke brukes mer, går ut av denne funksjonen")
 }
 
 func SendAndReceive(masterConnCh <-chan net.Conn, connectionsCh <-chan map[string]net.Conn,
 	sendMapToSlavesCh <-chan map[string]elevator.Elevator, getElevFromSlave chan elevator.Elevator) {
 	var connections map[string]net.Conn
+
+	fmt.Println("[SendAndReceive] kommet meg inni, og skal gå inn i for-loopen")
 	for {
 		select {
 		case c := <-connectionsCh:
+			fmt.Println("[SendAndReceive] mottok en mappet av connections på connectionsCh")
 			connections = c
 			//fmt.Println("Send and receive sin conn liste", c)
-			fmt.Println("Send and receive sin conn liste", connections)
+			fmt.Printf("[SendAndReceive] slik ser mappet ut: %v\n", connections)
 			fmt.Println()
 		case c := <-masterConnCh:
+			fmt.Println("[SendAndReceive] mottok en masterConn på masterConnCh")
+			fmt.Println("[SendAndReceive] går inn i ReceiveHandler")
 			go ReceiveHandler(c, getElevFromSlave)
-
+			fmt.Println("[SendAndReceive] gått forbi ReceiveHandler")
 		case c := <-sendMapToSlavesCh:
+			fmt.Println("[SendAndReceive] mottok et map av elevs på sendMapToSlavesCh")
+			fmt.Println("[SendAndReceive] går igang med å sende til alle slavene")
 			for _, v := range connections {
+				fmt.Println("[SendAndReceive] i for-loopen for å iterere gjennom connections-mappet")
+				fmt.Println("[SendAndReceive] for så å sende conn og map i Transmit")
 				go Transmit(v, c) // kanskje ikke goroutine?
+				fmt.Println("[SendAndReceive] iterasjon ferdig")
 			}
 		}
 	}
