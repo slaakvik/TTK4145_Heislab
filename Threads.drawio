@@ -1,0 +1,49 @@
+<mxfile host="65bd71144e">
+    <diagram id="muUKBHMwhzsZxyrM_Tcj" name="Page-1">
+        <mxGraphModel dx="1847" dy="662" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="2" value="" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="830" y="160" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="GetPeerUpdate(peerUpdate, &lt;font color=&quot;#006600&quot;&gt;SendMasterCh&lt;/font&gt;)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="170" y="80" width="270" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="ReceiveConn(&lt;font color=&quot;#ff0000&quot;&gt;connCh&lt;/font&gt;,&lt;font color=&quot;#3333ff&quot;&gt;connectionsCh&lt;/font&gt;,&lt;font color=&quot;#006600&quot;&gt;SendMasterCh&lt;/font&gt;)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="-120" y="240" width="320" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="6" value="" style="endArrow=classic;html=1;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;fillColor=#008a00;strokeColor=#005700;" edge="1" parent="1" source="4" target="5">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="480" y="380" as="sourcePoint"/>
+                        <mxPoint x="530" y="330" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="7" value="&lt;font color=&quot;#ffffff&quot;&gt;NotifyMaster(&lt;/font&gt;SendMasterCh&lt;font color=&quot;#ffffff&quot;&gt;, SendMyselfToMasterTx)&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fontColor=#006600;" vertex="1" parent="1">
+                    <mxGeometry x="360" y="240" width="360" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="8" value="" style="endArrow=classic;html=1;fontColor=#006600;exitX=0.75;exitY=1;exitDx=0;exitDy=0;fillColor=#008a00;strokeColor=#005700;" edge="1" parent="1" source="4" target="7">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="480" y="370" as="sourcePoint"/>
+                        <mxPoint x="530" y="320" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="9" value="&lt;font color=&quot;#ffffff&quot;&gt;SendAndReceive(&lt;/font&gt;&lt;font color=&quot;#ff0000&quot;&gt;connCh&lt;/font&gt;&lt;font color=&quot;#ffffff&quot;&gt;,&lt;/font&gt;&lt;font color=&quot;#3333ff&quot;&gt;connectionsCh&lt;/font&gt;&lt;font color=&quot;#ffffff&quot;&gt;, SendMapToSlavesTx, getElevFromSlaveRx)&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fontColor=#006600;" vertex="1" parent="1">
+                    <mxGeometry x="-120" y="360" width="540" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="10" value="" style="endArrow=classic;html=1;fontColor=#FF0000;exitX=0.345;exitY=1.042;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.267;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;fillColor=#a20025;strokeColor=#6F0000;" edge="1" parent="1" source="5" target="9">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="260" y="310" as="sourcePoint"/>
+                        <mxPoint x="310" y="260" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="11" value="" style="endArrow=classic;html=1;fontColor=#FF0000;exitX=0.561;exitY=1.05;exitDx=0;exitDy=0;exitPerimeter=0;fillColor=#0050ef;strokeColor=#001DBC;" edge="1" parent="1" source="5">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="260" y="310" as="sourcePoint"/>
+                        <mxPoint x="90" y="360" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
