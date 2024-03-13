@@ -255,20 +255,20 @@ func ReceiveHandler(conn net.Conn, data ...interface{}) {
 
 }
 
-func SendAndReceive(connCh chan net.Conn, connsCh chan map[string]net.Conn, mapOfElevsCh chan map[string]elevator.Elevator, getElevFromSlave chan elevator.Elevator) {
-	var conns map[string]net.Conn
+func SendAndReceive(masterConnCh <-chan net.Conn, connectionsCh <-chan map[string]net.Conn, mapOfElevsCh chan map[string]elevator.Elevator, getElevFromSlave chan elevator.Elevator) {
+	var connections map[string]net.Conn
 	for {
 		select {
-		case c := <-connsCh:
-			conns = c
+		case c := <-connectionsCh:
+			connections = c
 			//fmt.Println("Send and receive sin conn liste", c)
-			fmt.Println("Send and receive sin conn liste", conns)
+			fmt.Println("Send and receive sin conn liste", connections)
 			fmt.Println()
-		case c := <-connCh:
+		case c := <-masterConnCh:
 			go ReceiveHandler(c, getElevFromSlave)
 
 		case c := <-mapOfElevsCh:
-			for _, v := range conns {
+			for _, v := range connections {
 				go Transmit(v, c) // kanskje ikke goroutine?
 			}
 		}

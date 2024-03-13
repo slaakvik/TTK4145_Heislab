@@ -1,12 +1,8 @@
 package master
 
 import (
-	"Heis/elevator"
-	"Heis/network/establish_connection"
 	"Heis/network/peers"
-	"Heis/network/tcp"
 	"fmt"
-	"net"
 	"strconv"
 )
 
@@ -110,39 +106,4 @@ func GetIdOfNewMaster(peerUpdateRx chan peers.PeerUpdate, sendToMasterCh chan st
 	}
 }
 
-/**
- * @func
- *
- */
-func NotifyMaster(port string, id string, SendMasterCh chan string, sendElevToMaster chan elevator.Elevator) {
-	var elev elevator.Elevator
-	var tcpConn net.Conn
-	for {
-		select {
-		case m := <-SendMasterCh:
-			if id != m {
-				fmt.Println("--------------[jajaja]---------------")
-				//time.Sleep(1 * time.Millisecond)
-				masterIp := peers.ExtractIpFromPeer(m)
-				fmt.Println("Master IP:", masterIp)
-				tcpConn, err := establish_connection.TransmitConn(port, id, masterIp)
-				//fmt.Printf("Her1\n")
-				if err != nil {
-					fmt.Printf("[error] Failed to Dial: %v\n", err)
-					return
-				}
-				fmt.Printf("Dette er connen: %v\n", tcpConn)
-			}
-		case m := <-sendElevToMaster:
-			if tcpConn != nil {
-				fmt.Println("--------------[jajaja2]---------------")
-				elev = m
-				fmt.Printf("SJå på denne da: %v\n", tcpConn)
-				tcp.Transmit(tcpConn, elev)
-				fmt.Println("--------------[jajaja3]---------------")
-
-			}
-
-		}
-	}
-}
+// Unsure if the two functions above should be in the master-module or not. Maybe just merge master and slave modules together.
