@@ -46,18 +46,24 @@ type HRAInput struct {
 func RunCostFunc(elevMap map[string]elevator.Elevator) map[string]elevator.Elevator {
 	commonHallCalls := elevator.OrHallCalls(elevMap)
 	tempElevMap := elevMap
+	fmt.Println("[RunCostFunc] kommet inn")
 	for k, v := range tempElevMap {
 		if v.Failure {
+			fmt.Println("CostFunc: Elevator ", k, " has failure")
+			delete(tempElevMap, k)
+		} else if v.Floor == -1 {
+			fmt.Println("CostFunc: Elevator ", k, " has floor -1")
 			delete(tempElevMap, k)
 		}
-	}
-
+	}	
+	fmt.Println("[RunCostFunc] ferdig iterert over tempElevMap")
 	input := inputToCost(commonHallCalls, tempElevMap)
 	newHRAs := getCostOutput(input)
-
+	fmt.Println("[RunCostFunc] skal til å itere gjennom newHRAs")
 	for k := range newHRAs {
 		elevMap[k] = mergeHallAndRequests(elevMap[k], newHRAs[k])
 	}
+	fmt.Println("[RunCostFunc] går ut")
 	return elevMap
 }
 

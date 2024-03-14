@@ -101,7 +101,7 @@ func Receiver(port int, peerUpdateCh chan<- PeerUpdate) {
 	}
 }
 
-func GetPeerUpdate(peerCh chan PeerUpdate, SendMasterIdToReceive chan string, sendMasterIdToNotify chan string) {
+func PeerUpdates(peerCh chan PeerUpdate, SendMasterIdToReceive chan string, sendMasterIdToNotify chan string) {
 	for {
 		p := <-peerCh
 		fmt.Println("Hei her er jeg inni peerUpdate")

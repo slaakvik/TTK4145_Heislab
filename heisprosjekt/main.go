@@ -4,6 +4,7 @@ import (
 	"Heis/driver-go/elevio"
 	"Heis/elevator"
 	"Heis/fsm"
+	"Heis/master"
 
 	//"Heis/master"
 	"Heis/timer"
@@ -12,7 +13,6 @@ import (
 	"Heis/network/establish_connection"
 	"Heis/network/netfuncs"
 	"Heis/network/peers"
-	"Heis/network/tcp"
 	"Heis/slave"
 	"flag"
 	"fmt"
@@ -33,7 +33,7 @@ func main() {
 
 	//Heisann35!
 	masterPort := "8070"
-	slavePort := "8090"
+	//slavePort := "8090"
 
 	_numFloors := elevio.NumFloors
 	//_numButtons := elevio.NumButtons
@@ -56,7 +56,8 @@ func main() {
 	elevUpdateRealtimeCh := make(chan elevator.Elevator)
 
 	// Channels for door-timer and light:
-	doorTimerCh := make(chan bool)
+	doorTimerChBtnFSM := make(chan bool)
+	doorTimerChFloorFSM := make(chan bool)
 	timedOut := make(chan int)
 	lightsCh := make(chan int)
 
@@ -70,8 +71,8 @@ func main() {
 	masterConnCh := make(chan net.Conn)
 	connectionsCh := make(chan map[string]net.Conn)
 	sendMasterIdToReceive := make(chan string)
-	sendMasterIdToNotifyMaster := make(chan string)
-	sendMasterIdToGetNotifyFromMaster := make(chan string)
+	masterIdToAlertMasterCh := make(chan string)
+	masterIdToSendAndReceiveToMasterCh := make(chan string)
 	sendMapToSlavesCh := make(chan map[string]elevator.Elevator)
 	getElevFromSlaveRx := make(chan elevator.Elevator)
 
@@ -97,14 +98,13 @@ func main() {
 	// Goroutines for Heartbeat
 	go peers.Transmitter(15623, eleviId, peerTxEnable)
 	go peers.Receiver(15623, peerUpdateCh)
-	go peers.GetPeerUpdate(peerUpdateCh, sendMasterIdToReceive, sendMasterIdToNotifyMaster)
+	go peers.PeerUpdates(peerUpdateCh, sendMasterIdToReceive, masterIdToAlertMasterCh)
 
-	fmt.Println("[main] Nå er jeg på vei inn i receiveConn")
-	go establish_connection.ReceiveConn(eleviId, masterPort, masterConnCh, connectionsCh,
+	fmt.Println("[main] Nå er jeg på vei inn i EstablishConnToSlaves")
+	go establish_connection.EstablishConnToSlaves(eleviId, masterPort, masterConnCh, connectionsCh,
 		sendMasterIdToReceive, ListenAccepted)
-	fmt.Println("[main] Nå har jeg kommet meg forbi ReceiveConn")
-	go slave.NotifyMaster(masterPort, eleviId, sendMasterIdToNotifyMaster, sendMasterIdToGetNotifyFromMaster,
-		sendMyselfToMasterTx, slaveConnCh, connEstablishedForSlave)
+	fmt.Println("[main] Nå har jeg kommet meg forbi EstablishConnToSlaves")
+	go slave.AlertMaster(masterPort, eleviId, masterIdToAlertMasterCh, masterIdToSendAndReceiveToMasterCh, slaveConnCh, connEstablishedForSlave)
 	fmt.Println("[main] Nå har jeg nådd sperren for !isMaster")
 
 	/* if !isMaster {
@@ -114,17 +114,17 @@ func main() {
 	fmt.Println("[main] Started!")
 	go fsm.ButtonsAndRequests(masterPort, eleviId, isMaster, elevUpdateRealtimeCh,
 		drv_buttons /*elevatorTx, */, sendMapToSlavesCh, getElevFromSlaveRx, receiveMapFromMasterCh,
-		newOrderCh, lightsCh, sendMyselfToMasterTx)
+		newOrderCh, lightsCh, sendMyselfToMasterTx, doorTimerChBtnFSM)
 
-	go fsm.FloorObstrStop(masterPort, isMaster, eleviId, elevUpdateRealtimeCh, drv_floors, /*elevatorTx,*/
-		newOrderCh, doorTimerCh, timedOut, lightsCh, sendMyselfToMasterTx)
+	go fsm.FloorObstrStop(masterPort, isMaster, eleviId, elevUpdateRealtimeCh, drv_floors,
+		newOrderCh, doorTimerChFloorFSM, timedOut, lightsCh, sendMyselfToMasterTx)
 
 	//go fsm.FSM(drv_buttons, drv_floors, drv_stop, drv_obstr, eleviId, isMaster, ElevatorTx, CostTx, masterOrders, ElevatorRx, CostRx)
 	//go netfuncs.Network_FSM(peerUpdateCh)
-	go timer.Timer(doorTimerCh, timedOut)
+	go timer.Timer(doorTimerChBtnFSM, doorTimerChFloorFSM, timedOut)
 
 	// Slave
-	go slave.GetNotifyFromMaster(eleviId, slaveConnCh, sendMasterIdToGetNotifyFromMaster, receiveMapFromMasterCh)
+	go slave.SendAndReceiveToMaster(eleviId, slaveConnCh, masterIdToSendAndReceiveToMasterCh, receiveMapFromMasterCh, sendMyselfToMasterTx)
 
 	// Master
 	fmt.Println("[main] Nå har vi nådd sperren for master")
@@ -135,8 +135,16 @@ func main() {
 
 	} */
 	fmt.Println("[main] Nå er vi kommet forbi sperren for master")
-	go tcp.SendAndReceive(masterConnCh, connectionsCh, sendMapToSlavesCh, getElevFromSlaveRx)
+	go master.SendAndReceiveToSlaves(masterConnCh, connectionsCh, sendMapToSlavesCh, getElevFromSlaveRx)
 	// go tcp.Receive(masterPort, eleviId, elevatorRx)
+	for {
+		select {
+		case c := <-sendMyselfToMasterTx:
+			fmt.Printf("[main] mottok denne heisen fra en slave: %v\n", c)
+		case c := <-newOrderCh:
+			fmt.Printf("[main] mottok denne ordren: %v\n", c)
+		}
+	}
 
 	select {}
 }

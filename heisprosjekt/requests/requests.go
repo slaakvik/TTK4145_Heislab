@@ -140,16 +140,16 @@ func ShouldStop(e elevator.Elevator) bool {
 }
 
 // denne skal ikke gjøre endringer på heisen, kun sjekke if should stop. kanskje gjøre heisen til const parameter?
-// func Requests_shouldClearImmediately(e elevator.Elevator, btn_floor int, btn_type elevio.ButtonType) bool { //det er vel her problemet angående at vi ikke klarer å plukke opp bestillinger i etasjen vi allerede befinner oss i?
-// 	if e.Floor == btn_floor && ((e.Dirn == elevio.MD_Up && btn_type == elevio.BT_HallUp) ||
-// 		(e.Dirn == elevio.MD_Down && btn_type == elevio.BT_HallDown) ||
-// 		(e.Dirn == elevio.MD_Stop) ||
-// 		(btn_type == elevio.BT_Cab)) {
-// 		return true
-// 	} else {
-// 		return false
-// 	} //Må man ha klammeparentes her?
-// }
+func ShouldClearImmediately(e elevator.Elevator, btn_floor int, btn_type elevio.ButtonType) bool { //det er vel her problemet angående at vi ikke klarer å plukke opp bestillinger i etasjen vi allerede befinner oss i?
+	if e.Floor == btn_floor && ((e.Dirn == elevio.MD_Up && btn_type == elevio.BT_HallUp) ||
+		(e.Dirn == elevio.MD_Down && btn_type == elevio.BT_HallDown) ||
+		(e.Dirn == elevio.MD_Stop) ||
+		(btn_type == elevio.BT_Cab)) {
+		return true
+	} else {
+		return false
+	} //Må man ha klammeparentes her?
+}
 
 func clearAtCurrentFloor(e elevator.Elevator) elevator.Elevator {
 	e.Requests[e.Floor][elevio.BT_Cab] = false
