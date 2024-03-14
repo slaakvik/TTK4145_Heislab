@@ -3,7 +3,6 @@ package requests
 import (
 	"Heis/driver-go/elevio"
 	"Heis/elevator"
-	"fmt"
 )
 
 var _numFloors int = elevio.NumFloors
@@ -17,7 +16,7 @@ type DirnBehaviourPair struct {
 func OnDoorTimeout(elev elevator.Elevator, doorTimerCh chan bool, lightsCh chan<- int, elevUpdateRealTimeCh chan<- elevator.Elevator) elevator.Elevator {
 
 	elev = clearAtCurrentFloor(elev)
-	pair := chooseDirection(elev)
+	pair := ChooseDirection(elev)
 
 	elev.Dirn = pair.Dirn
 	elev.Behaviour = pair.Behaviour
@@ -33,30 +32,30 @@ func OnDoorTimeout(elev elevator.Elevator, doorTimerCh chan bool, lightsCh chan<
 
 	return elev
 }
-func OnRequest(elev elevator.Elevator, lightsCh chan<- int) elevator.Elevator {
-	// switch elev.Behaviour {
-	// case elevator.EB_DoorOpen:
-	// 	//elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
-	// 	fmt.Println("on request while Door open")
-	// case elevator.EB_Moving:
-	// 	//elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
-	// 	fmt.Println("on request while moving")
-	// case elevator.EB_Idle:
-	//elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
-	if elev.Behaviour == elevator.EB_Idle {
-		fmt.Println("on request while idle")
-		pair := chooseDirection(elev)
-		elev.Dirn = pair.Dirn
-		elevio.SetMotorDirection(elev.Dirn)
-		elev.Behaviour = pair.Behaviour
-	}
-	// }
+// func OnRequest(elev elevator.Elevator, lightsCh chan<- int) elevator.Elevator {
+// 	// switch elev.Behaviour {
+// 	// case elevator.EB_DoorOpen:
+// 	// 	//elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
+// 	// 	fmt.Println("on request while Door open")
+// 	// case elevator.EB_Moving:
+// 	// 	//elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
+// 	// 	fmt.Println("on request while moving")
+// 	// case elevator.EB_Idle:
+// 	//elev.Requests = elevator.MergeHallAndRequests(elev.Requests, HallRequests)
+// 	if elev.Behaviour == elevator.EB_Idle {
+// 		fmt.Println("on request while idle")
+// 		pair := chooseDirection(elev)
+// 		elev.Dirn = pair.Dirn
+// 		elevio.SetMotorDirection(elev.Dirn)
+// 		elev.Behaviour = pair.Behaviour
+// 	}
+// 	// }
 
-	// elevator.SetAllLights(elev)
-	lightsCh <- 1
+// 	// elevator.SetAllLights(elev)
+// 	lightsCh <- 1
 
-	return elev
-}
+// 	return elev
+// }
 
 func requests_above(e elevator.Elevator) bool {
 	for f := e.Floor + 1; f < _numFloors; f++ {
@@ -89,7 +88,7 @@ func requests_here(e elevator.Elevator) bool {
 	return false
 }
 
-func chooseDirection(e elevator.Elevator) DirnBehaviourPair {
+func ChooseDirection(e elevator.Elevator) DirnBehaviourPair {
 	switch e.Dirn {
 	case elevio.MD_Up:
 		if requests_above(e) {
@@ -139,8 +138,8 @@ func ShouldStop(e elevator.Elevator) bool {
 	}
 }
 
-// denne skal ikke gjøre endringer på heisen, kun sjekke if should stop. kanskje gjøre heisen til const parameter?
-// func Requests_shouldClearImmediately(e elevator.Elevator, btn_floor int, btn_type elevio.ButtonType) bool { //det er vel her problemet angående at vi ikke klarer å plukke opp bestillinger i etasjen vi allerede befinner oss i?
+// // denne skal ikke gjøre endringer på heisen, kun sjekke if should stop. kanskje gjøre heisen til const parameter?
+// func ShouldClearImmediately(e elevator.Elevator, btn_floor int, btn_type elevio.ButtonType) bool { //det er vel her problemet angående at vi ikke klarer å plukke opp bestillinger i etasjen vi allerede befinner oss i?
 // 	if e.Floor == btn_floor && ((e.Dirn == elevio.MD_Up && btn_type == elevio.BT_HallUp) ||
 // 		(e.Dirn == elevio.MD_Down && btn_type == elevio.BT_HallDown) ||
 // 		(e.Dirn == elevio.MD_Stop) ||
@@ -150,6 +149,28 @@ func ShouldStop(e elevator.Elevator) bool {
 // 		return false
 // 	} //Må man ha klammeparentes her?
 // }
+func ShouldClearImmediately(elev elevator.Elevator) bool {
+    // if e.Floor == -1 { // Elevator uninitialized
+    //     return false
+    // }
+
+    switch elev.Dirn {
+    case elevio.MD_Up:
+        if elev.Requests[elev.Floor][elevio.BT_HallUp] || elev.Requests[elev.Floor][elevio.BT_Cab] {
+            return true
+        }
+    case elevio.MD_Down:
+        if elev.Requests[elev.Floor][elevio.BT_HallDown] || elev.Requests[elev.Floor][elevio.BT_Cab] {
+            return true
+        }
+    case elevio.MD_Stop:
+        if elev.Requests[elev.Floor][elevio.BT_HallUp] || elev.Requests[elev.Floor][elevio.BT_HallDown] || elev.Requests[elev.Floor][elevio.BT_Cab] {
+            return true
+        }
+    }
+
+    return false
+}
 
 func clearAtCurrentFloor(e elevator.Elevator) elevator.Elevator {
 	e.Requests[e.Floor][elevio.BT_Cab] = false

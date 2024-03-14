@@ -19,72 +19,86 @@ import (
 /**
  * @func slave tries to connect to master
  */
-func NotifyMaster(port string, id string, sendMasterIdToNotifyMaster chan string, sendMasterIdToGetNotifyFromMaster chan string,
-	sendElevToMaster chan elevator.Elevator, slaveConnCh chan<- net.Conn, connEstablished chan struct{}) {
-	var elev elevator.Elevator
+func AlertMaster(port string, id string, masterIdToAlertMasterCh chan string, masterIdToSendAndReceiveToMasterCh chan string, slaveConnCh chan<- net.Conn, connEstablished chan struct{}) {
+	fmt.Println("[AlertMaster] akkurat kommet inn")
 	var slaveConn net.Conn = nil // ??
 	var err error                // ??
-	for {
-		select {
-		case m := <-sendMasterIdToNotifyMaster:
-			if id != m {
-				fmt.Println("Nå har jeg mottatt master, jeg er ikke master")
-				//time.Sleep(1 * time.Millisecond)
-				masterIp := peers.ExtractIpFromPeer(m)
-				fmt.Println("Master IP:", masterIp)
-				fmt.Printf("slaveConn før: %v\n", slaveConn)
-				slaveConn, err = establish_connection.TransmitConn(port, id, masterIp)
-				fmt.Printf("slaveConn etter: %v\n", slaveConn)
-				//if slaveConn != nil {
-				fmt.Println("closer nå jeg (jeg er slave)")
-				if _, ok := <-connEstablished; ok {
-					close(connEstablished)
-				}
-				//close(connEstablished)
-				fmt.Println("nå har jeg closet")
-				sendMasterIdToGetNotifyFromMaster <- m
-				slaveConnCh <- slaveConn
-				//}
-				//fmt.Printf("Her1\n")
-				if err != nil {
-					fmt.Printf("[error] Failed to Dial: %v\n", err)
-					return
-				}
-				fmt.Printf("Dette er connen: %v\n", slaveConn)
-				// we need to send this SlaveConn to a chennel so a goroutine can start a receiver for the slave
+	fmt.Println("[AlertMaster] går inn i for-loopen")
+	//for {
+	select {
+	case c := <-masterIdToAlertMasterCh:
+		if id != c {
+			fmt.Println("[AlertMaster] Nå har jeg mottatt master på sendMasterIdToNotifyMaster, jeg er ikke master")
+			//time.Sleep(1 * time.Millisecond)
+			masterIp := peers.ExtractIpFromPeer(c)
+			fmt.Println("[AlertMaster] Master IP:", masterIp)
+			fmt.Printf("[AlertMaster] slaveConn før: %v\n", slaveConn)
+			slaveConn, err = establish_connection.EstablishConnToMaster(port, id, masterIp)
+			fmt.Printf("[AlertMaster] slaveConn etter: %v\n", slaveConn)
 
-			}
-		case m := <-sendElevToMaster:
+			fmt.Println("[AlertMaster] lager en eksempelheis som skal sendes")
+			elevator := elevator.InitElev()
+			fmt.Println("[AlertMaster] Nå er jeg i ferd med å sende heisen til Transmit")
+			tcp.Transmit(slaveConn, elevator)
+			fmt.Println("[AlertMaster] Nå skal heisen være sendt")
+
 			//if slaveConn != nil {
-			fmt.Println("skal sende heis til master")
-			elev = m
-			fmt.Printf("SJå på denne da: %v\n", slaveConn)
-			tcp.Transmit(slaveConn, elev)
-			fmt.Println("Nå har jeg sendt heis til master")
+			fmt.Println("[AlertMaster] sjekkes om connEstablished kan closes")
+			/* if _, ok := <-connEstablished; ok {
+				close(connEstablished)
+				fmt.Println("[NotifyMaster] closeEstablished kunne closes")
+			} */
+			fmt.Println("[AlertMaster] kommet meg forbi closeEstablished ")
 
+			//close(connEstablished)
+			fmt.Println("[AlertMaster] skal sende master-id på sendMasterIdToGetNotifyFromMaster")
+			masterIdToSendAndReceiveToMasterCh <- c
+			fmt.Println("[AlertMaster] skal sende slaveConn på slaveConnCh")
+			slaveConnCh <- slaveConn
 			//}
-
+			//fmt.Printf("Her1\n")
+			if err != nil {
+				fmt.Printf("[error] Failed to Dial: %v\n", err)
+				return
+			}
+			fmt.Printf("[AlertMaster] Dette er slaveConn som ble sendt: %v\n", slaveConn)
+			// we need to send this SlaveConn to a chennel so a goroutine can start a receiver for the slave
 		}
 	}
+	//}
 }
 
 /**
  * @func slave tries to connect to master
  */
-func GetNotifyFromMaster(id string, slaveConnCh <-chan net.Conn, sendMasterIdToGetNotifyFromMaster chan string,
-	receiveMapFromMasterCh chan map[string]elevator.Elevator) {
+func SendAndReceiveToMaster(id string, slaveConnCh <-chan net.Conn, masterIdToSendAndReceiveToMasterCh chan string,
+	receiveMapFromMasterCh chan map[string]elevator.Elevator, sendElevToMaster chan elevator.Elevator) {
+	fmt.Println("[SendAndReceiveToMaster] nå er jeg inni")
+	var elev elevator.Elevator
 	masterId := ""
 	var slaveConn net.Conn
 	for {
+		fmt.Println("[SendAndReceiveToMaster] inni for-loopen")
 		if masterId != id {
+			fmt.Println("[SendAndReceiveToMaster] dette kommer fordi jeg ikke er master")
 			select {
-			case c := <-sendMasterIdToGetNotifyFromMaster:
+			case c := <-masterIdToSendAndReceiveToMasterCh:
+				fmt.Println("[SendAndReceiveToMaster] mottok master på sendMasterIdToGetNotifyFromMaster")
 				masterId = c
-
 			case c := <-slaveConnCh:
+				fmt.Printf("[SendAndReceiveToMaster] mottok en slaveConn på slaveConnCh: %v\n", c)
 				slaveConn = c
-				go tcp.ReceiveHandler(slaveConn, receiveMapFromMasterCh /* kanaler som slave lytter på*/)
-			default:
+				fmt.Println("[SendAndReceiveToMaster] starter en ReceiveHandler for slaven")
+				go tcp.Receive(slaveConn, receiveMapFromMasterCh /* kanaler som slave lytter på*/)
+				fmt.Println("[SendAndReceiveToMaster] nå skal ReceiveHandler være starta")
+				//default: ??
+			case c := <-sendElevToMaster:
+				//if slaveConn != nil {
+				fmt.Println("[SendAndReceiveToMaster] mottok en heis på sendElevToMaster")
+				elev = c
+				fmt.Println("[SendAndReceiveToMaster] skal sende heisen gjennom Transmit")
+				go tcp.Transmit(slaveConn, elev)
+				fmt.Println("[SendAndReceiveToMaster] Nå skal heisen være sendt til master")
 			}
 		}
 	}

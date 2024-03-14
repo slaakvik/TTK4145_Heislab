@@ -15,35 +15,37 @@ const (
 /**
  * @func for the slave
  */
-func TransmitConn(port string, id string, masterIp string) (net.Conn, error) {
-	fmt.Println("Nå er jeg inni TransmitConn og skal lage en addr")
+func EstablishConnToMaster(port string, id string, masterIp string) (net.Conn, error) {
+	fmt.Println("[EstablishConnToMaster] Nå er jeg inni og skal lage en addr")
 	addr, err := net.ResolveTCPAddr("tcp", masterIp+":"+port) // dette er bare foreløpig. IP-som mates inn må være destinasjonen
 	if err != nil {
 		fmt.Println("Error resolving address:", err)
 		return nil, err
 	}
-	fmt.Println("Nå er jeg inni TransmitConn og skal lage en connection")
+	fmt.Println("[EstablishConnToMaster] Nå er jeg inni og skal lage en connection")
 	conn, err := net.Dial(CONN_TYPE, addr.String())
 	if err != nil {
 		fmt.Printf("[error] Failed to Dial: %v\n", err)
 		return nil, err
 	}
-	fmt.Println("Nå er jeg inni TransmitConn og har laget en connection")
-	fmt.Println("Nå er jeg inni TransmitConn og skal skrive til connection")
+	fmt.Println("[EstablishConnToMaster] Nå er jeg inni og har laget en connection")
+	fmt.Println("[EstablishConnToMaster] Nå er jeg inni og skal skrive til connection")
 	conn.Write([]byte(id))
-	fmt.Println("Nå er jeg inni TransmitConn, men skal til å gå ut")
+	fmt.Println("[EstablishConnToMaster] Nå er jeg inni, men skal til å gå ut")
 	return conn, err
 }
 
 /**
  * @func for the master
  */
-func ReceiveConn(id string, port string, masterConnCh chan<- net.Conn, connectionsCh chan<- map[string]net.Conn, sendMasterCh chan string, listenAccepted chan struct{}) (net.Conn, error) {
+func EstablishConnToSlaves(id string, port string, masterConnCh chan<- net.Conn, connectionsCh chan<- map[string]net.Conn, sendMasterCh chan string, listenAccepted chan struct{}) (net.Conn, error) {
+	fmt.Println("[EstablishConnToSlaves] Nå har jeg kommet meg inni, entrer for-loopen")
 	for {
+		fmt.Println("[EstablishConnToSlaves] Venter her til det kommer en master...")
 		select {
 		case master := <-sendMasterCh:
 			if id == master {
-
+				fmt.Printf("[EstablishConnToSlaves] Jeg er masteren: %v\n", master)
 				masterIp := peers.ExtractIpFromPeer(master)
 				// Resolve address
 				addr, err := net.ResolveTCPAddr("tcp", masterIp+":"+port)
@@ -51,22 +53,26 @@ func ReceiveConn(id string, port string, masterConnCh chan<- net.Conn, connectio
 					fmt.Println("Error resolving address:", err)
 					return nil, err
 				}
+				fmt.Println("[EstablishConnToSlaves] Fått meg en adresse å sende på nå")
 				// Create listener
 				listener, err := net.ListenTCP("tcp", addr)
 				if err != nil {
 					fmt.Println("Error creating listener:", err)
 					return nil, err
 				}
+				fmt.Printf("[EstablishConnToSlaves] Akkurat laget en lytter: %v\n", listener)
 				defer listener.Close()
 
 				fmt.Println("Server listening on", addr.String())
 
 				connections := make(map[string]net.Conn)
-
+				fmt.Println("[EstablishConnToSlaves] På vei inn i for-loopen som lytter")
 				// Accept incoming connections
 				buffer := make([]byte, 1024)
 				for {
+					fmt.Println("[EstablishConnToSlaves] Venter her til noen biter på")
 					masterConn, err := listener.Accept()
+					fmt.Println("[EstablishConnToSlaves] Noen bet på kroken!")
 					if err != nil {
 						fmt.Println("Error accepting connection:", err)
 						continue
@@ -80,14 +86,22 @@ func ReceiveConn(id string, port string, masterConnCh chan<- net.Conn, connectio
 						return nil, err
 					}
 					id := string(buffer[0:k])
+					fmt.Printf("[EstablishConnToSlaves] Se på storfangsten: %v\n", id)
 
+					fmt.Println("[EstablishConnToSlaves] Denne fisken skal i samlingen min")
 					connections[id] = masterConn
+					fmt.Printf("[EstablishConnToSlaves] Er den ikke fin nå: %v", connections)
+
+					fmt.Println("[EstablishConnToSlaves] sender masterConn til masterConnCh")
 					masterConnCh <- masterConn
+					fmt.Println("[EstablishConnToSlaves] sender så connections til connectctionsCh")
 					connectionsCh <- connections
 
+					/* fmt.Println("[ReceiveConn] Vi sjekker om vi kan close listenAccept")
 					if _, ok := <-listenAccepted; ok {
+						fmt.Println("[ReceiveConn] Vi kunne close listenAccept!")
 						close(listenAccepted)
-					}
+					} */
 				}
 			}
 		}
