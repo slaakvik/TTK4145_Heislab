@@ -32,20 +32,26 @@ func ButtonsAndRequests(elevatorID string, isMaster bool, elevUpdateRealtimeCh <
 		case a := <-elevUpdateRealtimeCh:
 			elev = a
 			mapOfElevs[elev.ElevID] = elev
+			// if isMaster {
+			// 	mapOfElevs = cost_fns.RunCostFunc(mapOfElevs)
+			// 	sendMapToSlavesCh <- mapOfElevs
+
+				
+			// }
 		case a := <-drv_buttons:
 			btn_floor := a.Floor
 			btn_type := a.Button
 			fmt.Printf("Button: %+v\n", a)
 
-			if elev.Behaviour != elevator.EB_Moving && requests.Requests_shouldClearImmediately(elev, btn_floor, btn_type) {
-				elev.Behaviour = elevator.EB_DoorOpen
-				mapOfElevs[elev.ElevID] = elev
-				sendElevToMaster(isMaster, elev, sendMyselfToMaster)
-				elevio.SetDoorOpenLamp(true)
-				elevio.SetButtonLamp(btn_type, btn_floor, true)
-				doorTimerChForBtnFSM <- true
+			// if elev.Behaviour != elevator.EB_Moving && requests.Requests_shouldClearImmediately(elev, btn_floor, btn_type) {
+			// 	elev.Behaviour = elevator.EB_DoorOpen
+			// 	mapOfElevs[elev.ElevID] = elev
+			// 	sendElevToMaster(isMaster, elev, sendMyselfToMaster)
+			// 	elevio.SetDoorOpenLamp(true)
+			// 	elevio.SetButtonLamp(btn_type, btn_floor, true)
+			// 	doorTimerChForBtnFSM <- true
 
-			} else {
+			// } else {
 				if isMaster {
 					elev.Requests[btn_floor][btn_type] = true
 					fmt.Println("master har fått buttonpress")
@@ -63,10 +69,11 @@ func ButtonsAndRequests(elevatorID string, isMaster bool, elevUpdateRealtimeCh <
 					// tcpConn, _ := establish_connection.TransmitConn(masterPort, elev.ElevID) // vi må ha masterIp
 					// tcp.Transmit(tcpConn, elev)
 				}
-			}
+			// }
 		case a := <-getElevFromSlave:
+			fmt.Println("Elevator received, i am isMaster = ", isMaster)
 			if isMaster {
-				fmt.Println("master mottok en heis nå: ", a)
+				// fmt.Println("master mottok en heis nå: ", a)
 				mapOfElevs[a.ElevID] = a
 				mapOfElevs := cost_fns.RunCostFunc(mapOfElevs)
 				sendMapToSlavesCh <- mapOfElevs
@@ -74,8 +81,9 @@ func ButtonsAndRequests(elevatorID string, isMaster bool, elevUpdateRealtimeCh <
 			}
 
 		case a := <-receiveMapFromMasterCh:
+			// fmt.Println("map received, i am isMaster = ", isMaster)
 			if !isMaster {
-				fmt.Println("slave mottok et map nå: ", a)
+				// fmt.Println("slave mottok et map nå: ")
 				mapOfElevs = a
 				newOrderCh <- mapOfElevs
 			}
@@ -105,10 +113,24 @@ func FloorObstrStop(isMaster bool, elevatorId string,
 
 		case a := <-newOrderCh:
 			elev = a[elev.ElevID]
-
-			elevUpdateRealtimeCh <- elev
-			sendElevToMaster(isMaster, elev, sendMyselfToMaster) //(trenger vi denne?)
-			elev = requests.OnRequest(elev, lightsCh)
+			if !isMaster {
+				fmt.Println("slave received new orders.")
+				fmt.Println("slaves elevator: ", elev)
+				// elev.Requests[0][2]= true
+			}
+			if elev.Behaviour != elevator.EB_Moving && requests.ShouldClearImmediately(elev) {
+				elev.Behaviour = elevator.EB_DoorOpen
+				// mapOfElevs[elev.ElevID] = elev
+				doorTimerChFloorFSM <- true
+			} else if elev.Behaviour == elevator.EB_Idle {
+				fmt.Println("on request while idle")
+				pair := requests.ChooseDirection(elev)
+				elev.Dirn = pair.Dirn
+				elevio.SetMotorDirection(elev.Dirn)
+				elev.Behaviour = pair.Behaviour
+				
+			}
+			lightsCh <- 1
 			elevUpdateRealtimeCh <- elev
 			sendElevToMaster(isMaster, elev, sendMyselfToMaster) // på tråd?
 
@@ -136,11 +158,11 @@ func FloorObstrStop(isMaster bool, elevatorId string,
 		case <-timedOut:
 			fmt.Println("gikk inn i timedout")
 			elev = requests.OnDoorTimeout(elev, doorTimerChFloorFSM, lightsCh, elevUpdateRealtimeCh) //Bør doortimerChFloorFSM vært en annen enn den som brukes for floor arrival?
-			fmt.Println("gikk inn i timedout")
+			fmt.Println("Ferdig med ondoortimeout")
 			elevUpdateRealtimeCh <- elev
 
 			sendElevToMaster(isMaster, elev, sendMyselfToMaster)
-			fmt.Println("Managed to send floor update")
+			
 			// case a := <-drv_stop:
 			// 	fmt.Printf("Stop button: %+v\n", a)
 			// 	stop_functionality(a, elev)

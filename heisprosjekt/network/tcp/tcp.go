@@ -27,7 +27,8 @@ const (
 )
 
 func Transmit(conn net.Conn, data interface{}) {
-	fmt.Println("ankom Transmit nå, dataen er: ", data)
+	// fmt.Println("ankom Transmit nå, dataen er: ", data)
+	// fmt.Println("ankom Transmit nå")
 	buffer, err := json.Marshal(data)
 	if err != nil {
 		fmt.Printf("[error] Failed to encode data with error: %v\n", err)

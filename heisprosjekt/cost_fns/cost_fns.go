@@ -48,6 +48,10 @@ func RunCostFunc(elevMap map[string]elevator.Elevator) map[string]elevator.Eleva
 	tempElevMap := elevMap
 	for k, v := range tempElevMap {
 		if v.Failure {
+			fmt.Println("CostFunc: Elevator ", k, " has failure")
+			delete(tempElevMap, k)
+		}else if v.Floor == -1 {
+			fmt.Println("CostFunc: Elevator ", k, " has floor -1")
 			delete(tempElevMap, k)
 		}
 	}

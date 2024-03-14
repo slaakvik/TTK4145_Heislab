@@ -29,10 +29,10 @@ func main() {
 
 	_numFloors := elevio.NumFloors
 	//_numButtons := elevio.NumButtons
-	// elevio.Init("localhost:15657", _numFloors)
-	elevio.Init("localhost:15654", _numFloors)
+	elevio.Init("localhost:15657", _numFloors)
+	// elevio.Init("localhost:15654", _numFloors)
 
-	masterPort := "8355"
+	masterPort := "8080"
 	// slavePort := "8080"
 	var (
 		isMaster bool
@@ -48,7 +48,7 @@ func main() {
 	// newOrderCh := make(chan map[string]elevator.Elevator, 10)
 	// elevUpdateRealtimeCh := make(chan elevator.Elevator, 10)
 
-	buffer := 0
+	buffer := 10
 	newOrderCh := make(chan map[string]elevator.Elevator, buffer)
 	elevUpdateRealtimeCh := make(chan elevator.Elevator, buffer)
 

@@ -36,9 +36,9 @@ func SendAndReceiveToSlaves(masterConnCh <-chan net.Conn, connectionsCh <-chan m
 			go tcp.Receive(c, getElevFromSlave)
 
 		case c := <-sendMapToSlavesCh:
-			fmt.Println("master sendte mappet til send and receive")
-			fmt.Println("Her er connections: ", connections)
-			fmt.Println("Her er mappet som skal sendes: ", c)
+			// fmt.Println("master sendte mappet til send and receive")
+			// fmt.Println("Her er connections: ", connections)
+			// fmt.Println("Her er mappet som skal sendes: ", c)
 			for _, v := range connections {
 				go tcp.Transmit(v, c) // kanskje ikke goroutine?
 			}
