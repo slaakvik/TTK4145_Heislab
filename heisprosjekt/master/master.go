@@ -1,8 +1,11 @@
 package master
 
 import (
+	"Heis/elevator"
 	"Heis/network/peers"
+	"Heis/network/tcp"
 	"fmt"
+	"net"
 	"strconv"
 )
 
@@ -17,6 +20,32 @@ import (
  * @func ChooseMasterIndex is not assigning or making a master, it only chooses who of the peers should be assigned, which is the peer with the lowest processID
  *
  */
+
+func SendAndReceiveToSlaves(masterConnCh <-chan net.Conn, connectionsCh <-chan map[string]net.Conn,
+	sendMapToSlavesCh <-chan map[string]elevator.Elevator, getElevFromSlave chan elevator.Elevator) {
+	var connections map[string]net.Conn
+	for {
+		select {
+		case c := <-connectionsCh:
+			connections = c
+			//fmt.Println("Send and receive sin conn liste", c)
+			fmt.Println("Send and receive sin conn liste", connections)
+			fmt.Println()
+		case c := <-masterConnCh:
+			fmt.Println("nå mottok master en connection")
+			go tcp.Receive(c, getElevFromSlave)
+
+		case c := <-sendMapToSlavesCh:
+			fmt.Println("master sendte mappet til send and receive")
+			fmt.Println("Her er connections: ", connections)
+			fmt.Println("Her er mappet som skal sendes: ", c)
+			for _, v := range connections {
+				go tcp.Transmit(v, c) // kanskje ikke goroutine?
+			}
+		}
+	}
+}
+
 func ChooseMasterIndex(peersProcessId []string) (int, error) {
 	var SmallestProcessId, err = strconv.Atoi(peersProcessId[0])
 	if err != nil {

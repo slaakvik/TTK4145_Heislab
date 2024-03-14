@@ -18,7 +18,7 @@ import (
 /**
  * @func slave tries to connect to master
  */
-func NotifyMaster(port string, id string, sendMasterIdToNotifyMaster chan string, sendMasterIdToGetNotifyFromMaster chan string, slaveConnCh chan<- net.Conn, connEstablished chan struct{}) {
+func AlertMaster(port string, id string, sendMasterIdToNotifyMaster chan string, sendMasterIdToGetNotifyFromMaster chan string, slaveConnCh chan<- net.Conn, connEstablished chan struct{}) {
 	// var elev elevator.Elevator
 	var slaveConn net.Conn = nil // ??
 	var err error                // ??
@@ -31,7 +31,7 @@ func NotifyMaster(port string, id string, sendMasterIdToNotifyMaster chan string
 	masterIp := "localhost"
 	fmt.Println("Master IP:", masterIp)
 	fmt.Printf("slaveConn før: %v\n", slaveConn)
-	slaveConn, err = establish_connection.TransmitConn(port, id, masterIp)
+	slaveConn, err = establish_connection.EstablishConnToMaster(port, id, masterIp)
 	fmt.Printf("slaveConn etter: %v\n", slaveConn)
 	//if slaveConn != nil {
 	// fmt.Println("closer nå jeg (jeg er slave)")
@@ -46,10 +46,10 @@ func NotifyMaster(port string, id string, sendMasterIdToNotifyMaster chan string
 		fmt.Printf("[error] Failed to Dial: %v\n", err)
 		return
 	}
-	fmt.Printf("Dette er connen: %v\n", slaveConn)
-	if _, ok := <-connEstablished; ok {
-		close(connEstablished)
-	}
+	// fmt.Printf("Dette er connen: %v\n", slaveConn)
+	// if _, ok := <-connEstablished; ok {
+	// 	close(connEstablished)
+	// }
 	// we need to send this SlaveConn to a chennel so a goroutine can start a receiver for the slave
 
 	// case m := <-sendElevToMaster:
@@ -69,7 +69,7 @@ func NotifyMaster(port string, id string, sendMasterIdToNotifyMaster chan string
 /**
  * @func slave tries to connect to master
  */
-func GetNotifyFromMaster(id string, slaveConnCh <-chan net.Conn, sendMasterIdToGetNotifyFromMaster chan string,
+func SendAndReceiveToMaster(id string, slaveConnCh <-chan net.Conn, sendMasterIdToGetNotifyFromMaster chan string,
 	receiveMapFromMasterCh chan map[string]elevator.Elevator, sendElevToMaster chan elevator.Elevator) {
 	// masterId := ""
 	var slaveConn net.Conn
@@ -81,7 +81,7 @@ func GetNotifyFromMaster(id string, slaveConnCh <-chan net.Conn, sendMasterIdToG
 		select {
 		case c := <-slaveConnCh:
 			slaveConn = c
-			go tcp.ReceiveHandler(slaveConn, receiveMapFromMasterCh /* kanaler som slave lytter på*/)
+			go tcp.Receive(slaveConn, receiveMapFromMasterCh /* kanaler som slave lytter på*/)
 			// default:
 		case c := <-sendElevToMaster:
 			tcp.Transmit(slaveConn, c)

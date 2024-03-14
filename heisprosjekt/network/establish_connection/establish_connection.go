@@ -14,7 +14,7 @@ const (
 /**
  * @func for the slave
  */
-func TransmitConn(port string, id string, masterIp string) (net.Conn, error) {
+func EstablishConnToMaster(port string, id string, masterIp string) (net.Conn, error) {
 	fmt.Println("Nå er jeg inni TransmitConn og skal lage en addr")
 	masterIp = "localhost"
 	addr, err := net.ResolveTCPAddr("tcp", masterIp+":"+port) // dette er bare foreløpig. IP-som mates inn må være destinasjonen
@@ -38,7 +38,7 @@ func TransmitConn(port string, id string, masterIp string) (net.Conn, error) {
 /**
  * @func for the master
  */
-func ReceiveConn(id string, port string, masterConnCh chan<- net.Conn, connectionsCh chan<- map[string]net.Conn, sendMasterCh chan string, listenAccepted chan struct{}) (net.Conn, error) {
+func EstablishConnToSlaves(id string, port string, masterConnCh chan<- net.Conn, connectionsCh chan<- map[string]net.Conn, sendMasterCh chan string, listenAccepted chan struct{}) (net.Conn, error) {
 	for {
 
 		// masterIp := peers.ExtractIpFromPeer(master)

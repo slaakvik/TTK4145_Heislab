@@ -10,7 +10,7 @@ func DoorTimer( /*elev *elevator.Elevator,*/ quit chan int) { // Door opens for 
 	quit <- 1
 }
 
-func Timer(doorTimerChBtnFSM chan bool,doorTimerChFloorFSM chan bool,  timedOut chan int) { // Kjører denne som goroutine
+func Timer(doorTimerChBtnFSM chan bool, doorTimerChFloorFSM chan bool, timedOut chan int) { // Kjører denne som goroutine
 
 	resetDoorTimer := false
 	timer := time.NewTimer(3 * time.Second)
@@ -29,12 +29,12 @@ func Timer(doorTimerChBtnFSM chan bool,doorTimerChFloorFSM chan bool,  timedOut 
 		select {
 		case a := <-doorTimerChBtnFSM:
 			resetDoorTimer = a
-		case a:= <- doorTimerChFloorFSM:
+		case a := <-doorTimerChFloorFSM:
 			resetDoorTimer = a
 		case <-timer.C:
 			timedOut <- 1
 		default:
 		}
-		time.Sleep(10 * time.Millisecond)
+		// time.Sleep(10 * time.Millisecond)
 	}
 }

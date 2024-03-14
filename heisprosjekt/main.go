@@ -4,19 +4,14 @@ import (
 	"Heis/driver-go/elevio"
 	"Heis/elevator"
 	"Heis/fsm"
-
-	//"Heis/master"
-	"Heis/timer"
-
-	// "Heis/network/bcast"
+	"Heis/master"
 	"Heis/network/establish_connection"
 	"Heis/network/netfuncs"
-	"Heis/network/tcp"
 	"Heis/slave"
+	"Heis/timer"
 	"flag"
 	"fmt"
 	"net"
-	// "Heis/network/tcp"
 )
 
 //_________________________________________________________________________________________________
@@ -37,7 +32,7 @@ func main() {
 	// elevio.Init("localhost:15657", _numFloors)
 	elevio.Init("localhost:15654", _numFloors)
 
-	masterPort := "8070"
+	masterPort := "8355"
 	// slavePort := "8080"
 	var (
 		isMaster bool
@@ -53,7 +48,7 @@ func main() {
 	// newOrderCh := make(chan map[string]elevator.Elevator, 10)
 	// elevUpdateRealtimeCh := make(chan elevator.Elevator, 10)
 
-	buffer := 10
+	buffer := 0
 	newOrderCh := make(chan map[string]elevator.Elevator, buffer)
 	elevUpdateRealtimeCh := make(chan elevator.Elevator, buffer)
 
@@ -115,14 +110,14 @@ func main() {
 
 	if isMaster {
 
-		go establish_connection.ReceiveConn(eleviId, masterPort, masterConnCh, connectionsCh,
+		go establish_connection.EstablishConnToSlaves(eleviId, masterPort, masterConnCh, connectionsCh,
 			sendMasterIdToReceive, ListenAccepted)
-		go tcp.SendAndReceive(masterConnCh, connectionsCh, sendMapToSlavesCh, getElevFromSlaveRx)
+		go master.SendAndReceiveToSlaves(masterConnCh, connectionsCh, sendMapToSlavesCh, getElevFromSlaveRx)
 	} else {
 		// Slave
-		go slave.NotifyMaster(masterPort, eleviId, sendMasterIdToNotifyMaster, sendMasterIdToGetNotifyFromMaster, slaveConnCh, connEstablishedForSlave)
+		go slave.AlertMaster(masterPort, eleviId, sendMasterIdToNotifyMaster, sendMasterIdToGetNotifyFromMaster, slaveConnCh, connEstablishedForSlave)
 		// <-connEstablishedForSlave
-		go slave.GetNotifyFromMaster(eleviId, slaveConnCh, sendMasterIdToGetNotifyFromMaster, receiveMapFromMasterCh, sendMyselfToMasterTx)
+		go slave.SendAndReceiveToMaster(eleviId, slaveConnCh, sendMasterIdToGetNotifyFromMaster, receiveMapFromMasterCh, sendMyselfToMasterTx)
 		// go slave.ElevToMaster()
 
 	}
