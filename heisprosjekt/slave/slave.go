@@ -19,7 +19,7 @@ import (
 /**
  * @func slave tries to connect to master
  */
-func AlertMaster(port string, id string, masterIdToAlertMasterCh chan string, masterIdToSendAndReceiveToMasterCh chan string, slaveConnCh chan<- net.Conn, connEstablished chan struct{}) {
+func AlertMaster(port string, id string, masterIdToAlertMasterCh chan string, masterIdToSendAndReceiveToMasterCh chan string, slaveConnCh chan<- net.Conn) {
 	fmt.Println("[AlertMaster] akkurat kommet inn")
 	var slaveConn net.Conn = nil // ??
 	var err error                // ??

@@ -13,6 +13,7 @@ import (
 	"Heis/timer"
 
 	// "Heis/network/bcast"
+
 	"Heis/network/establish_connection"
 	"Heis/network/netfuncs"
 	"Heis/network/peers"
@@ -87,9 +88,6 @@ func main() {
 	sendMyselfToMasterTx := make(chan elevator.Elevator, buffer)
 	receiveMapFromMasterCh := make(chan map[string]elevator.Elevator, buffer)
 
-	// Blocking channels:
-	connEstablishedForSlave := make(chan struct{})
-	ListenAccepted := make(chan struct{})
 
 	// Channels for Heartbeat
 	peerUpdateCh := make(chan peers.PeerUpdate)
@@ -106,11 +104,16 @@ func main() {
 	go peers.Receiver(15623, peerUpdateCh)
 	go peers.PeerUpdates(peerUpdateCh, sendMasterIdToReceive, masterIdToAlertMasterCh)
 
+	// lightsTx := make(chan int)
+	// lightsRx := make(chan int)
+	// go bcast.Transmitter(16569, lightsTx)
+	// go bcast.Receiver(16569, lightsRx)
+
 	fmt.Println("[main] Nå er jeg på vei inn i EstablishConnToSlaves")
 	go establish_connection.EstablishConnToSlaves(eleviId, masterPort, masterConnCh, connectionsCh,
-		sendMasterIdToReceive, ListenAccepted)
+		sendMasterIdToReceive)
 	fmt.Println("[main] Nå har jeg kommet meg forbi EstablishConnToSlaves")
-	go slave.AlertMaster(masterPort, eleviId, masterIdToAlertMasterCh, masterIdToSendAndReceiveToMasterCh, slaveConnCh, connEstablishedForSlave)
+	go slave.AlertMaster(masterPort, eleviId, masterIdToAlertMasterCh, masterIdToSendAndReceiveToMasterCh, slaveConnCh)
 	fmt.Println("[main] Nå har jeg nådd sperren for !isMaster")
 
 	/* if !isMaster {
@@ -133,14 +136,14 @@ func main() {
 	go slave.SendAndReceiveToMaster(eleviId, slaveConnCh, masterIdToSendAndReceiveToMasterCh, receiveMapFromMasterCh, sendMyselfToMasterTx)
 
 	// Master
-	fmt.Println("[main] Nå har vi nådd sperren for master")
+	// fmt.Println("[main] Nå har vi nådd sperren for master")
 	/* if isMaster {
 		fmt.Println("[main] Jeg er master, og har nådd sperren")
 		<-ListenAccepted
 		fmt.Println("[main] Jeg er master, og har kommet meg")
 
 	} */
-	fmt.Println("[main] Nå er vi kommet forbi sperren for master")
+	// fmt.Println("[main] Nå er vi kommet forbi sperren for master")
 	go master.SendAndReceiveToSlaves(masterConnCh, connectionsCh, sendMapToSlavesCh, getElevFromSlaveRx)
 	// // go tcp.Receive(masterPort, eleviId, elevatorRx)
 	// for {

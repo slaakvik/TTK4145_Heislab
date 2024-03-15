@@ -45,6 +45,12 @@ func CanConnectToMaster(address string, port int, timeout time.Duration) bool {
  * @func Transmit for both the master and slaves
  */
 func Transmit(conn net.Conn, data interface{}) {
+	if conn == nil {
+		fmt.Println("[error] Connection is nil")
+		// slave.AlertMaster(masterPort, eleviId, masterIdToAlertMasterCh, masterIdToSendAndReceiveToMasterCh, slaveConnCh)
+		return
+		
+	}
 	// fmt.Println("[Transmit] Nå har jeg akkurat kommet inni Transmit")
 	buffer, err := json.Marshal(data)
 	if err != nil {

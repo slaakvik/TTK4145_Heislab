@@ -87,6 +87,7 @@ func ButtonsAndRequests(masterPort string, elevatorID string, isMaster bool, ele
 			}
 		case <-lightsCh:
 			elevator.SetAllLights(elev, mapOfElevs)
+
 		}
 	}
 }
@@ -108,17 +109,10 @@ func FloorObstrStop(masterPort string, isMaster bool, elevatorId string, elevUpd
 		select {
 		case a := <-newOrderCh:
 			elev = a[elev.ElevID]
-			if !isMaster {
-				fmt.Println("slave received new orders.")
-				fmt.Println("slaves elevator: ", elev)
-				// elev.Requests[0][2]= true
-			}
 			if (elev.Behaviour != elevator.EB_Moving) && requests.ShouldClearImmediately(elev) {
 				fmt.Println("inni should clear")
 				
 				elev.Behaviour = elevator.EB_DoorOpen
-				// mapOfElevs[elev.ElevID] = elev
-				// lightsCh <- 1
 				doorTimerCh <- true
 				elevUpdateRealtimeCh <- elev
 				
@@ -156,7 +150,7 @@ func FloorObstrStop(masterPort string, isMaster bool, elevatorId string, elevUpd
 			fmt.Println("gikk inn i timedout")
 			elev = requests.OnDoorTimeout(elev, doorTimerCh, lightsCh, elevUpdateRealtimeCh)
 			fmt.Println("gikk inn i timedout")
-			elevUpdateRealtimeCh <- elev
+			// elevUpdateRealtimeCh <- elev
 
 			fmt.Println("Managed to send floor update")
 			// case a := <-drv_stop:

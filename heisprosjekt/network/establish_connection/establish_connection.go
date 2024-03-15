@@ -38,7 +38,7 @@ func EstablishConnToMaster(port string, id string, masterIp string) (net.Conn, e
 /**
  * @func for the master
  */
-func EstablishConnToSlaves(id string, port string, masterConnCh chan<- net.Conn, connectionsCh chan<- map[string]net.Conn, sendMasterCh chan string, listenAccepted chan struct{}) (net.Conn, error) {
+func EstablishConnToSlaves(id string, port string, masterConnCh chan<- net.Conn, connectionsCh chan<- map[string]net.Conn, sendMasterCh chan string) (net.Conn, error) {
 	fmt.Println("[EstablishConnToSlaves] Nå har jeg kommet meg inni, entrer for-loopen")
 	for {
 		fmt.Println("[EstablishConnToSlaves] Venter her til det kommer en master...")
