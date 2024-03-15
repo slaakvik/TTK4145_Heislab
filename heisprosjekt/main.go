@@ -24,8 +24,6 @@ func main() {
 	_numFloors := elevio.NumFloors
 
 	elevio.Init("localhost:15657", _numFloors)
-	//elevio.Init("localhost:15654", _numFloors)
-	// elevio.Init("localhost:15655", _numFloors)
 
 	// Elevator initialization
 	elevId := peers.MakeId()
