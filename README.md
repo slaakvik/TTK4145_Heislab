@@ -1,3 +1,3 @@
 # TTK4145-Heislab
 
-Type "go run main.go" in terminal to run the code.
+Initialize elevatorserver and type "go run main.go" in terminal to run the code.
