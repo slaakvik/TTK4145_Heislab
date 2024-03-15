@@ -325,3 +325,38 @@ func receiveConn() {
 	}
 }
 ```
+
+_________________________________________________________________________________________
+15.03 - sendLightStateToAllElevs - for å få alle heiser til å bytte hall calls samtidig.
+_________________________________________________________________________________________
+Something like this.
+```Go
+import (
+    "encoding/json"
+    "io"
+    "log"
+)
+
+// Define a struct to represent the message for setting lights.
+type SetLightsMessage struct {
+    LightsState [4][2]bool `json:"lights_state"`
+}
+
+// Define a function to send a message for setting lights to all elevators.
+func sendLightsMessageToAll(conn io.Writer, msg SetLightsMessage) {
+    // Encode the message into JSON.
+    encodedMsg, err := json.Marshal(msg)
+    if err != nil {
+        log.Println("Error encoding message:", err)
+        return
+    }
+
+    // Send the encoded message over the TCP connection.
+    _, err = conn.Write(encodedMsg)
+    if err != nil {
+        log.Println("Error sending message:", err)
+        return
+    }
+}
+```
+
