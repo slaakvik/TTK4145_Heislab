@@ -165,7 +165,7 @@ func main() {
 func primary(counter int) {
 	var addr string = "localhost:8070"
 	fmt.Printf("This is now a primary.")
- 	exec.Command("gnome-terminal", "--", "go", "run", "main.go", "-isMaster=true").Run()
+ 	exec.Command("gnome-terminal", "--", "go", "run", "main.go"/*, "-isMaster=true"*/).Run() // Commentet -isMaster=true so that the elevator initializes as a slave.
 	for {
 		conn, err := net.Dial("udp", addr)
 		if err != nil {
