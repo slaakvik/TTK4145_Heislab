@@ -7,36 +7,28 @@ import (
 	"strings"
 )
 
-func InitElev() Elevator { //elevator_unitialized?
+func InitElev() Elevator {
 
 	return Elevator{
-		Floor: -1,
-		Dirn:  elevio.MD_Stop,
-		Requests: initializeRequests(),
+		Floor:     -1,
+		Dirn:      elevio.MD_Stop,
+		Requests:  initializeRequests(),
 		Behaviour: EB_Idle,
 		ElevID:    "",
 		Failure:   false,
-		//DoorOpenDuration_s: 3.0,
-		//DoorOpen:           false,
 	}
 }
 
-func OnInitBetweenFloors(elev Elevator) Elevator{
-
+func OnInitBetweenFloors(elev Elevator) Elevator {
 	elevio.SetMotorDirection(elevio.MD_Down)
 	elev.Behaviour = EB_Moving
 	elev.Dirn = elevio.MD_Down
 	return elev
 }
 
-
-
-// Function to read cab calls from localBackup.txt, if the file exists. If not it returns an all false list of length
-// Place this function in init_elev.go
-// Intended to only be run _once_ inside the initElev() function
 func checkAndLoadCabCalls() []bool {
 	fileInfo, err := os.Stat("localBackup.txt")
-	if os.IsNotExist(err) ||(fileInfo != nil && fileInfo.Size() == 0) {
+	if os.IsNotExist(err) || (fileInfo != nil && fileInfo.Size() == 0) {
 		cabCalls := make([]bool, elevio.NumFloors)
 		for i := range cabCalls {
 			cabCalls[i] = false
@@ -60,9 +52,6 @@ func checkAndLoadCabCalls() []bool {
 	}
 }
 
-// Function to merge requests and initializeCabCalls
-// Place this function in init_elev.go
-// Put this function in init_elev() by setting Requests: initializeRequests
 func initializeRequests() [elevio.NumFloors][elevio.NumButtons]bool {
 	initializeCabCalls := checkAndLoadCabCalls()
 	requests := [elevio.NumFloors][elevio.NumButtons]bool{}

@@ -2,8 +2,11 @@ package peers
 
 import (
 	"Heis/network/conn"
+	"Heis/network/localip"
+	"flag"
 	"fmt"
 	"net"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -74,7 +77,6 @@ func Receiver(port int, peerUpdateCh chan<- PeerUpdate) {
 		}
 
 		// Adding new Master
-		//p.Master = ""
 		if id != "" {
 			if _, idExists := lastSeen[id]; !idExists {
 				p.Master = id
@@ -101,35 +103,35 @@ func Receiver(port int, peerUpdateCh chan<- PeerUpdate) {
 	}
 }
 
-func PeerUpdates(peerCh chan PeerUpdate, SendMasterIdToReceive chan string, sendMasterIdToNotify chan string) {
+
+func PeerUpdates(id string, peerCh1 chan PeerUpdate, peerCh2 chan PeerUpdate, isMasterCh1 chan bool, isMasterCh2 chan bool, sendMasterIdToReceive chan string, sendMasterIdToNotify chan string) {
 	for {
-		p := <-peerCh
-		fmt.Println("Hei her er jeg inni peerUpdate")
+		p := <-peerCh1
 		PrintUpdatedPeers(p)
-		//Send master to masterCh
 		if p.Master != "" {
 			masterId := p.Master
-			SendMasterIdToReceive <- masterId
+			sendMasterIdToReceive <- masterId
 			sendMasterIdToNotify <- masterId
+			if id == masterId {
+				isMasterCh1 <- true
+				isMasterCh2 <- true
+			} else {
+				isMasterCh1 <- false
+				isMasterCh2 <- false
+			}
 		}
+		peerCh2 <- p
 	}
 }
 
+
 func determineMaster(peers []string, masterId string) string {
-	// Your logic to determine the master goes here
-	// For simplicity, you can use the first peer as the master
-	// if masterId != "" {
-	// 	fmt.Println("Master is already set")
-	// 	return masterId
-	// }else if len(peers) > 0 {
 	for len(peers) > 0 {
 		return peers[0]
 	}
-	// }
-	return "" // Return an empty string if there are no peers
+	return ""
 }
 
-// ---[what i have defined]---
 func PrintUpdatedPeers(p PeerUpdate) {
 	fmt.Printf("Peer update:\n")
 	fmt.Printf("  Peers:    %q\n", p.Peers)
@@ -138,32 +140,26 @@ func PrintUpdatedPeers(p PeerUpdate) {
 	fmt.Printf("  Master:     %q\n", p.Master)
 }
 
-func ExtractIpFromPeers(p PeerUpdate, peersIp []string) []string {
-	//peersIp = ""
-	for _, peer := range p.Peers {
-		data := strings.Split(peer, "-")
-		peersIp = append(peersIp, data[1])
+func MakeId() string {
+	var id string
+	flag.StringVar(&id, "id", "", "id of this peer")
+	flag.Parse()
+
+	if id == "" {
+		localIP, err := localip.LocalIP()
+		if err != nil {
+			fmt.Println(err)
+			localIP = "DISCONNECTED"
+		}
+		id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
 	}
-	return peersIp
+	return id
 }
+
 
 func ExtractIpFromPeer(peer string) string {
 	data := strings.Split(peer, "-")
 	return data[1]
 }
 
-func ExtractProcessIdFromPeers(p PeerUpdate, peersProcessId []string) []string {
-	//peersProcessId = nil // maybe not the best solution, but I need to reset the slice every time to not just add new peer. Alternetively, we could just remove the lost peers.
-	for _, peer := range p.Peers {
-		data := strings.Split(peer, "-")
-		peersProcessId = append(peersProcessId, data[2])
-	}
-	return peersProcessId
-}
 
-func ExtractProcessIdFromPeer(peer string) string {
-	data := strings.Split(peer, "-")
-	return data[2]
-}
-
-//---------------------------
