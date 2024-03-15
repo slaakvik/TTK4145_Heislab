@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"sync"
 )
 
 /*
@@ -111,13 +112,27 @@ func GetIdOfNewMaster(peerUpdateRx chan peers.PeerUpdate, sendToMasterCh chan st
 
 // Unsure if the two functions above should be in the master-module or not. Maybe just merge master and slave modules together.
 
-func SendAndReceiveToSlaves(masterConnCh <-chan net.Conn, connectionsCh <-chan map[string]net.Conn,
+/* func SendAndReceiveToSlaves(id string, peerCh chan peers.PeerUpdate, masterConnCh <-chan net.Conn, connectionsCh <-chan map[string]net.Conn,
 	sendMapToSlavesCh <-chan map[string]elevator.Elevator, getElevFromSlave chan elevator.Elevator) {
 	var connections map[string]net.Conn
 
 	// fmt.Println("[SendAndReceiveToSlaves] kommet meg inni, og skal gå inn i for-loopen")
 	for {
 		select {
+		case c := <- peerCh:
+			peers.PrintUpdatedPeers(c)
+			//fmt.Println("Peer update:", c)
+			if len(c.Lost) != 0 {
+				for i := 0; i < len(c.Lost); i++ {
+					for k := range connections {
+						if k == c.Lost[i] {
+							fmt.Printf("[SendAndReceiveToSlaves] fant en lost connection: %v\n", k)
+							delete(connections, k)
+						}
+					}
+				}
+			}
+			fmt.Printf("[SendAndReceiveToSlaves] Connections update fra peer: %v\n", connections)
 		case c := <-connectionsCh:
 			// fmt.Println("[SendAndReceiveToSlaves] mottok en mappet av connections på connectionsCh")
 			connections = c
@@ -141,3 +156,63 @@ func SendAndReceiveToSlaves(masterConnCh <-chan net.Conn, connectionsCh <-chan m
 		}
 	}
 }
+ */
+
+
+
+
+// Define a mutex to synchronize access to shared resources
+var mutex sync.Mutex
+
+func SendAndReceiveToSlaves(id string, peerCh chan peers.PeerUpdate, masterConnCh <-chan net.Conn, connectionsCh <-chan map[string]net.Conn,
+	sendMapToSlavesCh <-chan map[string]elevator.Elevator, getElevFromSlave chan elevator.Elevator) {
+	var connections map[string]net.Conn
+
+	// fmt.Println("[SendAndReceiveToSlaves] kommet meg inni, og skal gå inn i for-loopen")
+	for {
+		select {
+		case c := <-peerCh:
+			peers.PrintUpdatedPeers(c)
+			//fmt.Println("Peer update:", c)
+			if len(c.Lost) != 0 {
+				mutex.Lock()
+				for i := 0; i < len(c.Lost); i++ {
+					for k := range connections {
+						if k == c.Lost[i] {
+							fmt.Printf("[SendAndReceiveToSlaves] fant en lost connection: %v\n", k)
+							delete(connections, k)
+						}
+					}
+				}
+				mutex.Unlock()
+			}
+			fmt.Printf("[SendAndReceiveToSlaves] Connections update fra peer: %v\n", connections)
+		case c := <-connectionsCh:
+			mutex.Lock()
+			// fmt.Println("[SendAndReceiveToSlaves] mottok en mappet av connections på connectionsCh")
+			connections = c
+			//fmt.Println("Send and receive sin conn liste", c)
+			// fmt.Printf("[SendAndReceiveToSlaves] slik ser mappet ut: %v\n", connections)
+			fmt.Println()
+			mutex.Unlock()
+		case c := <-masterConnCh:
+			// fmt.Println("[SendAndReceiveToSlaves] mottok en masterConn på masterConnCh")
+			// fmt.Println("[SendAndReceiveToSlaves] går inn i Receive")
+			go tcp.Receive(c, getElevFromSlave)
+			// fmt.Println("[SendAndReceiveToSlaves] gått forbi Receive")
+		case c := <-sendMapToSlavesCh:
+			mutex.Lock()
+			// fmt.Println("[SendAndReceiveToSlaves] mottok et map av elevs på sendMapToSlavesCh")
+			// fmt.Println("[SendAndReceiveToSlaves] går igang med å sende til alle slavene")
+			for _, v := range connections {
+				// fmt.Println("[SendAndReceiveToSlaves] i for-loopen for å iterere gjennom connections-mappet")
+				// fmt.Println("[SendAndReceiveToSlaves] for så å sende conn og map i Transmit")
+				tcp.Transmit(v, c) // kanskje ikke goroutine?
+				// fmt.Println("[SendAndReceiveToSlaves] iterasjon ferdig")
+			}
+			mutex.Unlock()
+		}
+	}
+}
+
+

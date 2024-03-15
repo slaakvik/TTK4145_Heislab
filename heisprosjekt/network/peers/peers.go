@@ -101,17 +101,27 @@ func Receiver(port int, peerUpdateCh chan<- PeerUpdate) {
 	}
 }
 
-func PeerUpdates(peerCh chan PeerUpdate, SendMasterIdToReceive chan string, sendMasterIdToNotify chan string) {
+func PeerUpdates(id string, peerCh1 chan PeerUpdate, peerCh2 chan PeerUpdate, isMasterCh1 chan bool, isMasterCh2 chan bool, isMasterCh3 chan bool, sendMasterIdToReceive chan string, sendMasterIdToNotify chan string) {
 	for {
-		p := <-peerCh
+		p := <-peerCh1
 		fmt.Println("Hei her er jeg inni peerUpdate")
 		PrintUpdatedPeers(p)
 		//Send master to masterCh
 		if p.Master != "" {
 			masterId := p.Master
-			SendMasterIdToReceive <- masterId
+			sendMasterIdToReceive <- masterId
 			sendMasterIdToNotify <- masterId
+			if id == masterId {
+				isMasterCh1 <- true
+				isMasterCh2 <- true
+				isMasterCh3 <- true
+			} else {
+				isMasterCh1 <- false
+				isMasterCh2 <- false
+				isMasterCh3 <- false
+			}
 		}
+		peerCh2 <- p
 	}
 }
 

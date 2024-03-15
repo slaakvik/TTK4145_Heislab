@@ -3,14 +3,13 @@ package netfuncs
 import (
 	//"Heis/elevator"
 	"Heis/network/localip"
-	"Heis/network/peers"
 	"flag"
 	"fmt"
 	"os"
 	//"time"
 )
 
-func Network_FSM(peerChan chan peers.PeerUpdate) {
+/* func Network_FSM(peerChan chan peers.PeerUpdate) {
 	for {
 		select {
 		case a := <-peerChan:
@@ -20,7 +19,7 @@ func Network_FSM(peerChan chan peers.PeerUpdate) {
 			// 	fmt.Printf("Received: %+v\n", a)
 		}
 	}
-}
+} */
 
 // type HelloMsg struct {
 // 	Message string
@@ -47,18 +46,4 @@ func InitNet() string {
 	return id
 }
 
-func printPeerUpdate(p peers.PeerUpdate) {
-	fmt.Printf("Peer update:\n")
-	fmt.Printf("  Peers:    %q\n", p.Peers)
-	fmt.Printf("  New:      %q\n", p.New)
-	fmt.Printf("  Lost:     %q\n", p.Lost)
-}
 
-// func Bcast_message(ch chan HelloMsg, elev elevator.Elevator, id string) {
-// 	message := HelloMsg{"Hello from " + id, elev, 0}
-// 	for {
-// 		message.Iter++
-// 		ch <- message
-// 		time.Sleep(1 * time.Second)
-// 	}
-// }

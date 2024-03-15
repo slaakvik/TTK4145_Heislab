@@ -108,35 +108,75 @@ func EstablishConnToSlaves(id string, port string, masterConnCh chan<- net.Conn,
 	}
 }
 
-/**
- * @func
- */
-func AddConnections(id string, connsUpdateCh chan map[string]net.Conn, peerUpdateCh chan peers.PeerUpdate, connsCh chan map[string]net.Conn) {
-	var conns map[string]net.Conn
+
+
+
+func EstablishConnToSlaves2(id string, port string, masterConnCh chan<- net.Conn, connectionsCh chan<- map[string]net.Conn,
+	 						sendMasterCh chan string, isMasterCh2 chan bool) (net.Conn, error) {
+	isMaster := false
+	connections := make(map[string]net.Conn)
+	buffer := make([]byte, 1024)
+	var listener net.Listener // må settes til noe?
 	for {
 		select {
-		case c := <-connsUpdateCh:
-			conns = c
-			//fmt.Println("Updated connections:", c)
-			//fmt.Println("Connections lagt til:", conns)
-			connsCh <- conns // Må ha dennne, ikke fjern den Anders! (kanskje?)
-		case c := <-peerUpdateCh:
-			if c.Master == "" {
-				c.Master = id
-			}
-			peers.PrintUpdatedPeers(c)
-			//fmt.Println("Peer update:", c)
-			if len(c.Lost) != 0 {
-				for i := 0; i < len(c.Lost); i++ {
-					for k := range conns {
-						if k == c.Lost[i] {
-							delete(conns, k)
-						}
-					}
+		case c := <-isMasterCh2:
+			isMaster = c
+			if isMaster {
+				fmt.Printf("[EstablishConnToSlaves] Jeg er masteren: %v\n", id)
+				masterIp := peers.ExtractIpFromPeer(id)
+				// Resolve address
+				addr, err := net.ResolveTCPAddr("tcp", masterIp+":"+port)
+				if err != nil {
+					fmt.Println("Error resolving address:", err)
+					return nil, err
 				}
+				fmt.Println("[EstablishConnToSlaves] Fått meg en adresse å sende på nå")
+				// Create listener
+				listener, err = net.ListenTCP("tcp", addr)
+				if err != nil {
+					fmt.Println("Error creating listener:", err)
+					return nil, err
+				}
+				fmt.Printf("[EstablishConnToSlaves] Akkurat laget en lytter: %v\n", listener)
+				defer listener.Close()
+
+				fmt.Println("Server listening on", addr.String())
+
+				connections = make(map[string]net.Conn)
+				fmt.Println("[EstablishConnToSlaves] På vei inn i for-loopen som lytter")
+				// Accept incoming connections
+				buffer = make([]byte, 1024)
 			}
-			//fmt.Printf("Connections update fra peer: %v\n", conns)
-			connsCh <- conns
+		default:
+			if isMaster {
+				fmt.Println("[EstablishConnToSlaves] Venter her til noen biter på")
+				masterConn, err := listener.Accept()
+				fmt.Println("[EstablishConnToSlaves] Noen bet på kroken!")
+				if err != nil {
+					fmt.Println("Error accepting connection:", err)
+					continue
+				}
+				fmt.Println("Accepted connection on port: " + port)
+
+				// [Her leser jeg slavens ID]
+				k, err := masterConn.Read(buffer)
+				if err != nil {
+					fmt.Printf("[error] Failed to read: %v\n", err)
+					return nil, err
+				}
+				id := string(buffer[0:k])
+				fmt.Printf("[EstablishConnToSlaves] Se på storfangsten: %v\n", id)
+
+				fmt.Println("[EstablishConnToSlaves] Denne fisken skal i samlingen min")
+				connections[id] = masterConn
+				fmt.Printf("[EstablishConnToSlaves] Er den ikke fin nå: %v", connections)
+
+				fmt.Println("[EstablishConnToSlaves] sender masterConn til masterConnCh")
+				masterConnCh <- masterConn
+				fmt.Println("[EstablishConnToSlaves] sender så connections til connectctionsCh")
+				connectionsCh <- connections
+			}
 		}
 	}
 }
+

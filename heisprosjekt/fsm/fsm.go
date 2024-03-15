@@ -14,12 +14,13 @@ import (
 
 // Finite state machine
 
-func ButtonsAndRequests(masterPort string, elevatorID string, isMaster bool, elevUpdateRealtimeCh <-chan elevator.Elevator,
+func ButtonsAndRequests(masterPort string, elevatorID string, /*isMaster bool,*/ elevUpdateRealtimeCh <-chan elevator.Elevator,
 	drv_buttons chan elevio.ButtonEvent, /*elevatorTx chan elevator.Elevator,*/
 	sendMapToSlavesCh chan<- map[string]elevator.Elevator, getElevFromSlave chan elevator.Elevator,
 	receiveMapFromMasterCh <-chan map[string]elevator.Elevator, newOrderCh chan<- map[string]elevator.Elevator,
-	lightsCh <-chan int, sendMyselfToMaster chan elevator.Elevator) {
-	
+	lightsCh <-chan int, sendMyselfToMaster chan elevator.Elevator, isMasterCh chan bool) {
+
+	isMaster := false
 	elev := elevator.InitElev()
 	elev.ElevID = elevatorID
 	mapOfElevs := make(map[string]elevator.Elevator)
@@ -30,6 +31,7 @@ func ButtonsAndRequests(masterPort string, elevatorID string, isMaster bool, ele
 
 	for {
 		select {
+		case isMaster = <-isMasterCh:
 		case a := <-elevUpdateRealtimeCh:
 				elev = a
 				if isMaster {
@@ -92,9 +94,11 @@ func ButtonsAndRequests(masterPort string, elevatorID string, isMaster bool, ele
 	}
 }
 
-func FloorObstrStop(masterPort string, isMaster bool, elevatorId string, elevUpdateRealtimeCh chan<- elevator.Elevator, 
+func FloorObstrStop(masterPort string, /*isMaster bool,*/ elevatorId string, elevUpdateRealtimeCh chan<- elevator.Elevator, 
 	drv_floors chan int /*elevatorTx chan elevator.Elevator,*/, newOrderCh <-chan map[string]elevator.Elevator, doorTimerCh chan bool, 
 	timedOut chan int, lightsCh chan<- int, sendMyselfToMaster chan elevator.Elevator) {
+	
+	//isMaster := false
 	elev := elevator.InitElev()
 	elev.ElevID = elevatorId
 	// tempMap:= make(map[string]elevator.Elevator)	
@@ -107,6 +111,7 @@ func FloorObstrStop(masterPort string, isMaster bool, elevatorId string, elevUpd
 
 	for {
 		select {
+		//case isMaster = <-isMasterCh:
 		case a := <-newOrderCh:
 			elev = a[elev.ElevID]
 			if (elev.Behaviour != elevator.EB_Moving) && requests.ShouldClearImmediately(elev) {
